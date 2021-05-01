@@ -1,0 +1,7 @@
+*.sh
+*.log
+*.exe
+*.out
+*.o
+*.a
+*.so
