@@ -29,14 +29,9 @@ int main() {
     // Motor 2
     DDRD = (1 << PD3) | (1 << PD2);
     // On-Board LED
-    DDRC = (1 << PC7);
-    PORTC = (1 << PC7);
     sei();
     while(1){
-        PORTC ^= (1 << PC7);
-        _delay_ms(100);
-        PORTC &= (1 << PC7);
-        _delay_ms(100);
+        _delay_ms(1000);
         if(__builtin_expect(action,0)){
             for(int i = 0; i < state; i++){
                 toggle_motors();
