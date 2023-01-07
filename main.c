@@ -6,6 +6,11 @@ volatile unsigned long counter = 0;
 volatile unsigned char state = 0;
 volatile unsigned char action = 0; 
 
+#define PRESCALE 256
+#define F_PWM (F_CPU / (PRESCALE * 256))
+
+
+
 #define XSTR(x) STR(x)
 #define STR(x) #x
 
@@ -27,31 +32,26 @@ int main() {
 
     // setting OC0A to output
     DDRB = (1 << PB7);
-    //DDRD = 0xFF;
-    //DDRE = DDRE | (1<<PE6);
+
     //sei();
-    int t = 0;
     _delay_ms(5000);
-    PORTC = 0x00;
+
     while(1){
 
-
-        for(char i = 46;;i++){
+        int p = 1;
+        for(char i = 46;;i = i + p){
             OCR0A = i;
-            /*PORTD = 0xFF;
-            PORTE = (PORTE & 0xBF) | (i & 0x04);
-            PORTB = (PORTB & 0xDF) | (i & 0x08);
-            PORTB = (PORTB & 0xB7) | (i & 0x20);*/
-            _delay_ms(1000);
-            if(i%2 == 0){
-                PORTC = (t<<PC7);
-                t = t?0:1;
-            }
+            _delay_ms(100);
+            PORTC = (i%2<<PC7);
             if (i == 59) {
-                i = 45;
+                p = -1;
+                _delay_ms(3000);
+            }
+            if (i == 31){
+                p = 1;
                 _delay_ms(3000);
             }
         }
-     }
+    }
 }
 
