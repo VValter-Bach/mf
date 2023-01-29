@@ -9,7 +9,7 @@ volatile unsigned char action = 0;
 #define PRESCALE 256
 #define F_PWM (F_CPU / (PRESCALE * 256))
 
-
+#define wbr(reg, bit_value, bit_index) reg = (reg & (0xFF^(1<<bit_index))) | (bit_value<<bit_index);
 
 #define XSTR(x) STR(x)
 #define STR(x) #x
@@ -18,6 +18,18 @@ volatile unsigned char action = 0;
 ISR (TIMER0_COMPA_vect){
     return;
 }*/
+
+#define SPI_MSB 0
+#define SPI_LSB 1
+#define 
+void setup_spi(char spi_dodr, char spi_cp){
+    wbr(SPCR, 1, SPE); // Enable SPI
+    wbr(SPCR, 1, SPIE); // Enable SPI Interrupt
+    wbr(SPCR, spi_dodr, DODR) // Setting the data direction
+    wbr(PORTB, 1, PB0); // Setting SS-Pin to out so MSTR does not get resetted
+    wbr(SPCR, 1, MSTR); // Setting SPI Master
+    wbr(SPCR, spi_cp, CPOL);
+}
 
 
 int main() {
