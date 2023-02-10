@@ -1,15 +1,9 @@
-#include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 
-#define PRESCALE 256
-#define F_PWM (F_CPU / (PRESCALE * 256))
+#include "spi.h"
 
-#define CS PF0 // Using PF0 as chip select
-#define SCK PB1 // Using PB1 as clock
-#define MOSI PB2 // Using PB2 as MOSI
-#define MISO PB3 // Using PB3 as MISO
 
 #define wbr(reg, bit_value, bit_index) reg = (reg & (0xFF ^ (1 << bit_index))) | (bit_value << bit_index)
 
@@ -30,7 +24,8 @@ void setup_spi(){
     wbr(DDRF, 1, CS); // CS output
     wbr(DDRB, 1, SCK); // SCK output
     wbr(DDRB, 1, MOSI); // MOSI output
-
+    wbr(DDRB, 1, PB0); // SS needs to be out
+    
     wbr(SPCR, 1, SPE); // Enable SPI
     wbr(SPCR, 1, MSTR); // Setting SPI Master
     wbr(SPCR, 1, SPR0); // Reducing frequency
@@ -41,23 +36,44 @@ void setup_spi(){
     wbr(PORTF, 1, PF1); // Setting to High so radio turned off.
 }
 
-void transceive(uint8_t data)
+ 
+//Function to blink LED
+void led_blink (uint16_t i)
 {
-    // load data into register
-    SPDR = data;
-
-    // Wait for transmission complete
-    while(!(SPSR & (1 << SPIF)));
+    //Blink LED "i" number of times
+    for (; i>0; --i)
+    {
+        PORTD|=(1<<0);
+        _delay_ms(100);
+        PORTD=(0<<0);
+        _delay_ms(100);
+    }
 }
-
-void setup_pwm(){
-    TCNT0 = 0; // setting counter to 0
-    TCCR0A = (1<<COM0A1) | (1<<WGM01) | (1<<WGM00);  // Clear on Match set on Top |  setting Fast Pwm Mode (Mode 3)
-    TCCR0B = (1<<CS02); // setting Prescale to 256
-    OCR0A = 45; // setting A Comparer Value for ~1500 µsec
-    DDRB = (1 << PB7); // setting OC0A to output
+ 
+//Main
+int main(void)
+{
+    spi_init();                  //Initialize SPI Master
+    //DDRD |= 0x01;                       //PD0 as Output
+ 
+    unsigned char data;                 //Received data stored here
+    uint8_t x = 0;                      //Counter value which is sent
+ 
+    while(1)
+    {
+        data = 0x00;                    //Reset ACK in "data"
+        data = spi_tranceiver(0xFF);     //Send "x", receive ACK in "data"
+        /*if(data == ACK) {               //Check condition
+            //If received data is the same as ACK, blink LED "x" number of times
+            led_blink(x);
+        }
+        else {
+            //If received data is not ACK, then blink LED for a long time so as to determine error
+            led_blink(LONG_TIME);
+        }*/
+    }
 }
-
+/*
 int main() {
     clear_eeprom();
     DDRC = (1<<PC7);    //setting LED to output
@@ -106,3 +122,4 @@ int main() {
     }
 }
 
+*/

@@ -9,16 +9,20 @@ CPUTYPE=atmega32u4
 FLASH=-R .eeprom -R .fuse -R .lock -R .signature
 OPTS=-s -fno-stack-protector -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-math-errno -fno-unroll-loops -fmerge-all-constants -fno-ident -fsingle-precision-constant -ffast-math -Wl,-z,norelro -Wl,--hash-style=gnu
 FLAGS=-std=c99 -mmcu=$(CPUTYPE) -Wall -Wno-array-bounds -Wextra -gdwarf-2 -O3 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -DF_CPU=8000000
+SRCS=obj/engine.o obj/spi.o
+all: bin/main.hex
 
-obj/main.o: main.c
+srcs: $(SRCS)
+
+obj/%.o: %.c
 	$(CC) $(FLAGS) -c $< -o $@ $(LINKER)
 
-obj/main.elf: obj/main.o
-	$(CC) $(FLAGS) -o $@ $< $(LINKER)
+obj/%.elf: obj/%.o
+	$(CC) $(FLAGS) -o $@ $< $(SRCS) $(LINKER)
 	$(AVRSIZE) --format=avr $@ --mcu=$(CPUTYPE)
 
-bin/main.hex: obj/main.elf
-	$(AVROC) -O ihex $(FLASH) $< $@
+bin/main.hex: srcs obj/main.elf
+	$(AVROC) -O ihex $(FLASH) obj/main.elf $@
 
 format:
 	clang-format -i -style=file main.c
