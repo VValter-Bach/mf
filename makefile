@@ -25,7 +25,8 @@ bin/main.hex: srcs obj/main.elf
 	$(AVROC) -O ihex $(FLASH) obj/main.elf $@
 
 format:
-	clang-format -i -style=file main.c
+	indent -linux *.c *.h
+	rm -f *~
 
 push: bin/main.hex
 	stty -F /dev/ttyACM0 1200
