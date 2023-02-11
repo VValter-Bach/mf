@@ -6,6 +6,10 @@
 
 #define XSTR(x) STR(x)
 #define STR(x) #x
+
+#define ab(REG, INDEX) REG |= (1<<INDEX)
+#define db(REG, INDEX) REG &= ~(1<<INDEX)
+
 uint8_t spi_data[40];
 uint8_t spi_data_length;
 uint8_t spi_data_pos;
@@ -18,31 +22,26 @@ void clear_eeprom()
 	}
 }
 
-void setup_spi()
-{
-	wbr(DDRF, 1, CS);	// CS output
-	wbr(DDRB, 1, SCK);	// SCK output
-	wbr(DDRB, 1, MOSI);	// MOSI output
-	wbr(DDRB, 1, PB0);	// SS needs to be out
-
-	wbr(SPCR, 1, SPE);	// Enable SPI
-	wbr(SPCR, 1, MSTR);	// Setting SPI Master
-	wbr(SPCR, 1, SPR0);	// Reducing frequency
-	wbr(SPCR, 1, SPR1);	// Reducing frequency
-
-	wbr(PORTF, 1, CS);	// Setting to High
-	wbr(DDRF, 1, PF1);	// Setting PF1 to out, because we need
-	// reset Pin.
-	wbr(PORTF, 1, PF1);	// Setting to High so radio turned off.
-}
-
 // Main
 int main(void)
 {
+	DDRC = (1<<PC7); //setting LED to output
 	spi_init();		// Initialize SPI Master
+	_delay_ms(50);
 
-	while (1) {
-		spi_tranceiver(0x00);	// Send "x", receive ACK in "data"
+	PORTC = (1<<PC7);
+	PORTF = (1<<CS);
+	_delay_ms(2000);
+	PORTC &= ~(1<<PC7);
+	PORTF &= ~(1<<CS);
+	spi_tranceiver(0x01);	// Send "x", receive ACK in "data"
+	uint8_t reg = spi_tranceiver(0xFF);
+	PORTF |= (1<<CS);
+	eeprom_write_byte((uint8_t*)1, reg);
+	if(reg == 0x05) PORTC |= (1<<PC7); // tunrning LED on
+	_delay_ms(3000);
+	while(1) {
+		_delay_ms(1000);
 	}
 }
 

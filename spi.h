@@ -5,6 +5,7 @@
 #define SCK PB1			// Using PB1 as clock
 #define MOSI PB2		// Using PB2 as MOSI
 #define MISO PB3		// Using PB3 as MISO
+#define SS PB0          // Using PB0 as SS
 
 #include <util/delay.h>
 #include <avr/interrupt.h>
