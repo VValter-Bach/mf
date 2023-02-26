@@ -9,12 +9,7 @@
 
 #define ab(REG, INDEX) REG |= (1<<INDEX)
 #define db(REG, INDEX) REG &= ~(1<<INDEX)
-
-uint8_t spi_data[40];
-uint8_t spi_data_length;
-uint8_t spi_data_pos;
-uint8_t tpos = 10;
-
+/*
 void clear_eeprom()
 {
 	for (uint16_t i = 0; i < 1024; i += 2) {
@@ -38,13 +33,17 @@ int main(void)
 	uint8_t reg = spi_tranceiver(0xFF);
 	PORTF |= (1<<CS);
 	eeprom_write_byte((uint8_t*)1, reg);
-	if(reg == 0x05) PORTC |= (1<<PC7); // tunrning LED on
+	//reg = spi_tranceiver(0x7F);
+	//eeprom_write_byte((uint8_t*)2, reg);
+	//reg = spi_tranceiver(0x7F);
+	//eeprom_write_byte((uint8_t*)3, reg);
+	if(reg == 0x08 || reg == 0x09) PORTC |= (1<<PC7); // tunrning LED on
 	_delay_ms(3000);
 	while(1) {
 		_delay_ms(1000);
 	}
 }
-
+*/
 /*
  * int main() { clear_eeprom(); DDRC = (1<<PC7); //setting LED to output
  * PORTC = (1<<PC7); // tunrning LED on
