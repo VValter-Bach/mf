@@ -2,13 +2,139 @@
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 
-#include "spi.h"
-
 #define XSTR(x) STR(x)
 #define STR(x) #x
 
-#define ab(REG, INDEX) REG |= (1<<INDEX)
-#define db(REG, INDEX) REG &= ~(1<<INDEX)
+#define STEPS_MIN 69
+#define STEPS_MAX 119
+#define STEPS_AVG 94
+#define COUNTER_MAX 188
+
+// the counter of steps
+uint16_t counter = 0;
+// amount of steps needed to toggle PD6
+uint16_t steps = STEPS_AVG;
+
+void set_speed(uint8_t s)
+{
+	if (s > 200)
+		steps = STEPS_MAX;
+	else if (s > 196)
+		steps = STEPS_MAX - 1;
+	else if (s > 192)
+		steps = STEPS_MAX - 2;
+	else if (s > 188)
+		steps = STEPS_MAX - 3;
+	else if (s > 184)
+		steps = STEPS_MAX - 4;
+	else if (s > 180)
+		steps = STEPS_MAX - 5;
+	else if (s > 176)
+		steps = STEPS_MAX - 6;
+	else if (s > 172)
+		steps = STEPS_MAX - 7;
+	else if (s > 168)
+		steps = STEPS_MAX - 8;
+	else if (s > 164)
+		steps = STEPS_MAX - 9;
+	else if (s > 160)
+		steps = STEPS_MAX - 10;
+	else if (s > 156)
+		steps = STEPS_MAX - 11;
+	else if (s > 152)
+		steps = STEPS_MAX - 12;
+	else if (s > 148)
+		steps = STEPS_MAX - 13;
+	else if (s > 144)
+		steps = STEPS_MAX - 14;
+	else if (s > 140)
+		steps = STEPS_MAX - 15;
+	else if (s > 136)
+		steps = STEPS_MAX - 16;
+	else if (s > 132)
+		steps = STEPS_MAX - 17;
+	else if (s > 128)
+		steps = STEPS_MAX - 18;
+	else if (s > 124)
+		steps = STEPS_MAX - 19;
+	else if (s > 120)
+		steps = STEPS_MAX - 20;
+	else if (s > 116)
+		steps = STEPS_MAX - 21;
+	else if (s > 112)
+		steps = STEPS_MAX - 22;
+	else if (s == 100)
+		steps = STEPS_AVG;
+	else
+		steps = STEPS_AVG;
+}
+
+// interrupt routine of TIMER0
+ISR(TIMER0_OVF_vect)
+{
+	counter++;
+	if (counter >= COUNTER_MAX) {
+		PORTD |= (1 << PD6);
+		counter = 0;
+	} else if (counter == steps) {
+		PORTD &= ~(1 << PD6);
+	}
+}
+
+void setup_pwm()
+{
+	TCNT0 = 0;		// setting counter to 0
+	TCCR0B |= (1 << CS00);	// prescale 0
+	TIMSK0 |= (1 << TOIE0);	// enable overflow interrupt
+	DDRD |= (1 << PD6);	// setting PD6 to out
+	sei();			// enabling global interrupts
+}
+
+int main()
+{
+	setup_pwm();
+	DDRB = (1 << PB5);
+	_delay_ms(5000);
+	_delay_ms(5000);
+	PORTB |= (1 << PB5);
+	for (uint8_t i = 0; i < 100; i++) {
+		set_speed(100 + i);
+		PORTB |= (1 << PB5);
+		_delay_ms(500);
+		PORTB &= ~(1 << PB5);
+		_delay_ms(500);
+	}
+
+	for (uint8_t i = 50;; i++) {
+		PORTB |= (1 << PB5);
+		_delay_ms(500);
+		PORTB &= ~(1 << PB5);
+		_delay_ms(500);
+
+	}
+}
+
+/*
+int main(){
+	setup_pwm();
+	DDRB |= (1<<PB5);
+	OCR0A = 0;
+	_delay_ms(5000);
+	OCR0A = MIDDLE;
+	_delay_ms(10);
+	OCR0A = 0;
+	_delay_ms(1000);
+	int8_t p = 1;
+	for(int8_t i = MIDDLE;;i+=p){
+		PORTB |= (1<<PB5);
+		_delay_ms(500);
+		PORTB &= ~(1<<PB5);
+		_delay_ms(500);
+		if (i == FORWARD) { p = -1; _delay_ms(3000);}
+		if (i == REVERSE) { p = 1; _delay_ms(3000);}
+	}
+}
+*/
 /*
 void clear_eeprom()
 {
