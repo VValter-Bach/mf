@@ -219,8 +219,8 @@ void rf95_setup(){
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);
 	spi_write_reg(RF95_40_DIO_MAPPING1, 0x40);
 	spi_write_reg(RF95_1D_MODEM_CONFIG1, 0x72); // Default bandwidth and Implicit Header mode
-	spi_write_reg(RF95_1E_MODEM_CONFIG2, 0x70); // TODO: revist
-	spi_write_reg(RF95_26_MODEM_CONFIG3, 0x04); // TODO: revist
+	spi_write_reg(RF95_1E_MODEM_CONFIG2, 0x70); // Default spreading factor
+	spi_write_reg(RF95_26_MODEM_CONFIG3, 0x00); // Default setting
 	uint32_t frf = FREQUENCY / RF95_FSTEP;
 	spi_write_reg(RF95_06_FRF_MSB, (frf >> 16) & 0xFF);
 	spi_write_reg(RF95_07_FRF_MID, (frf >> 8) & 0xFF);
@@ -234,15 +234,22 @@ void rf95_setup(){
 	led_write(0,0,0);
 }
 
+/*void rf95_setRx(){
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_SLEEP);
+
+}*/
+
 void rf95_send(uint8_t * data, uint8_t len){
 	state &= 0x7F;
 	spi_write_reg(RF95_01_OP_MODE, RF95_LONG_RANGE_MODE);
+	spi_write_reg(RF95_0D_FIFO_ADDR_PTR, 0);
 	spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0);
 	spi_write_n(RF95_00_FIFO, data, len);
-	spi_write_reg(RF95_22_PAYLOAD_LENGTH, len);
+	spi_write_reg(RF95_22_PAYLOAD_LENGTH, len + 1);
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_TX);
 	spi_write_reg(RF95_40_DIO_MAPPING1, 0x40);
 //	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);
+//	_delay_ms(10);
 }
 
 
@@ -260,11 +267,12 @@ int main()
 	rf95_setup();
 	_delay_ms(1000);
 	led_write(0,0,0);
-	uint8_t len = 19;
-	uint8_t* data = malloc(len);
+	uint8_t len = 16;
+	/*uint8_t* data = malloc(len);
 	for (int i = 0; i < len; i++){
 		data[i] = 0xFF;
-	}
+	}*/
+	uint8_t* data =  (uint8_t*)"!Hallo von hier";
 	_delay_ms(1000);
 	rf95_send(data, len); // TODO: anfangs problem
 	while(1){
