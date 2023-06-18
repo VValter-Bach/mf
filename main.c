@@ -150,7 +150,7 @@ void led_write(uint8_t l1, uint8_t l2, uint8_t l3){
  */
 void spi_setup(){
 	DDRB |= (1 << SS) | (1 << MOSI) | (1 << SCK) | (1 << RST); // setting SS | MOSI | SCK to out
-	SPCR |= (1 << SPE) | (1 << MSTR) | (1 << SPR0);
+	SPCR |= (1 << SPE) | (1 << MSTR);// | (1 << SPR0);
 	PORTB |= (1 << SS) | (1 << RST);
 }
 
@@ -169,8 +169,8 @@ void rf95_setup(_Bool tx){
 	_delay_ms(10);
 	PORTB &= ~(1 << RST);
 	_delay_ms(10);
-	PORTB &= (1 << RST);
-	_delay_ms(10);
+	PORTB |= (1 << RST);
+	_delay_ms(50);
 
 	// Checking Version of Module to see if SPI is working
 	uint8_t bs = spi_read_reg(RF95_42_VERSION);
@@ -202,6 +202,8 @@ void rf95_setup(_Bool tx){
 	sei(); // enabling iterrupt
 	_delay_ms(1000);
 	led_write(0,0,0);
+	if(tx) rf95_set_tx();
+	else rf95_set_rx();
 }
 
 /**
@@ -294,8 +296,8 @@ ISR(TIMER0_OVF_vect)
  * otherwise we clear the flags on the rf95
  */
 ISR(INT0_vect) {
-	led_write(1,1,1);
 	if(state & (1 << STATE_MODULE)){
+		led_write(1,1,0);
 		rf95_receive();
 	}
 	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
@@ -333,9 +335,10 @@ void rf95_receive(){
  */
 void message_handle(){
 	if(1){
-		rf95_set_tx();
+		//rf95_set_tx();
 		data[0]++;
 		rf95_send(data, 10);
+		state &= ~(1 << STATE_MODULE);
 	}
 }
 
@@ -356,12 +359,16 @@ int main()
 	message_handle();
 	while(1){
 		if(state & (1 << STATE_INTERUPT)){ // action is necessary (state interrupt bit is set)
-			if(!(state & (1 << STATE_MODULE))){ // If we are in TX mode change to RX mode, because transmission is done
+			message_handle();
+			
+			/*if(!(state & (1 << STATE_MODULE))){ // If we are in TX mode change to RX mode, because transmission is done
 				rf95_set_rx();
+				state &= ~(1 << STATE_MODULE);
 			}else{
 				message_handle();
-			}
+			}*/
 		}
+		//if(spi_read_reg(RF95_12_IRQ_FLAGS) & 0xF0) led_write(0,1,0); 
 		_delay_ms(100);
 	}
 	//_delay_ms(5000);
