@@ -30,6 +30,13 @@
 #define STATE_INTERUPT 7
 #define STATE_MODULE 6
 
+#define STATE_INTERUPT_IS (state & (1 << STATE_INTERUPT))
+#define STATE_INTERUPT_CLR state &= ~(1 << STATE_MODULE)
+#define STATE_INTERUPT_SET state |= (1 << STATE_INTERUPT)
+#define STATE_RX_IS (state & (1 << STATE_MODULE))
+#define STATE_RX_SET state |= (1 << STATE_MODULE)
+#define STATE_TX_IS (!(state & (1 << STATE_MODULE)))
+#define STATE_TX_SET state &= ~(1 << STATE_MODULE)
 /********************* GLOBAL VARIABLES **************************/
 /**
  * @brief State of the microcontroller
@@ -159,12 +166,11 @@ void spi_setup(){
  * @param tx Non-0 vaue for starting in transmit mode!
  */
 void rf95_setup(_Bool tx){
-	led_write(1,0,0);
+	state = 0;
 	// Enabling interrupt for G0 / DIO0
 	EIMSK |= (1 << INT0);    // set INT0-Interrupt-Flag
 	EICRA |= (1 << ISC01) | (1 << ISC00); // for rising
 
-	// TODO RST PIN
 	PORTB |= (1 << SS) | (1 << RST);
 	_delay_ms(10);
 	PORTB &= ~(1 << RST);
@@ -179,11 +185,41 @@ void rf95_setup(_Bool tx){
 			_delay_ms(100);
 		}
 	}
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_SLEEP);
+	_delay_ms(20);
+	bs = spi_read_reg(RF95_01_OP_MODE);
+	if(bs != 0x00){
+		while(1){
+			led_write(1,0,1);
+			_delay_ms(100);
+		}
+	}
 	spi_write_reg(RF95_01_OP_MODE, RF95_LONG_RANGE_MODE); // Sett to LoRa Mode
-	_delay_ms(10); // Wait to apply
+	_delay_ms(20); // Wait to apply
+	bs = spi_read_reg(RF95_01_OP_MODE);
+	if(bs != RF95_LONG_RANGE_MODE){
+		while(1){
+			led_write(1,0,1);
+			_delay_ms(100);
+		}
+	}
 	if(tx) rf95_set_tx();
 	else rf95_set_rx();
+	bs = spi_read_reg(RF95_01_OP_MODE);
+	if(!(bs & RF95_LONG_RANGE_MODE)){
+		while(1){
+			led_write(1,0,1);
+			_delay_ms(100);
+		}
+	}
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);  // Setting Operation mode to Standby so i can change other registers
+	bs = spi_read_reg(RF95_01_OP_MODE);
+	if(!(bs & RF95_LONG_RANGE_MODE)){
+		while(1){
+			led_write(1,0,1);
+			_delay_ms(100);
+		}
+	}
 	spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0); // Setting TX data base index to 0
 	spi_write_reg(RF95_0F_FIFO_RX_BASE_ADDR, 100); // Setting RX data base index to 100
 	spi_write_reg(RF95_1D_MODEM_CONFIG1, 0x72); // Default bandwidth and Implicit Header mode
@@ -201,9 +237,9 @@ void rf95_setup(_Bool tx){
 	spi_write_reg(RF95_4D_PA_DAC, 0x04); // Default setting
 	sei(); // enabling iterrupt
 	_delay_ms(1000);
-	led_write(0,0,0);
 	if(tx) rf95_set_tx();
 	else rf95_set_rx();
+	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 }
 
 /**
@@ -301,7 +337,7 @@ ISR(INT0_vect) {
 		rf95_receive();
 	}
 	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
-	state |= (1 << STATE_INTERUPT);
+	STATE_INTERUPT_SET;
 }
 
 /**
@@ -324,9 +360,9 @@ void rf95_send(uint8_t * data, uint8_t len){
  * into the global data buffer
  */
 void rf95_receive(){
-	data_len = spi_read_reg(RF95_13_RX_NB_BYTES); // reading length of the message
+	//data_len = spi_read_reg(RF95_13_RX_NB_BYTES); // reading length of the message
 	spi_write_reg(RF95_0D_FIFO_ADDR_PTR, spi_read_reg(RF95_10_FIFO_RX_CURRENT_ADDR)); // Reading packet address and setting reading address to it
-	spi_read_n(RF95_00_FIFO, data, data_len); // Reading data in global data buffer
+	spi_read_n(RF95_00_FIFO, data, 11); // Reading data in global data buffer
 }
 
 /**
@@ -335,41 +371,30 @@ void rf95_receive(){
  */
 void message_handle(){
 	if(1){
-		//rf95_set_tx();
-		data[0]++;
-		rf95_send(data, 10);
-		state &= ~(1 << STATE_MODULE);
+		led_write(0,0,0);
 	}
 }
 
 int main()
 {
+	sei();
 	//pwm_setup();
 	led_setup();
-	led_write(0,0,0);
-	led_write(1,1,1);
 	spi_setup();
 	_delay_ms(1000);
-	led_write(1,1,0);
+	rf95_setup(0);
 	_delay_ms(1000);
-	rf95_setup(1);
-	_delay_ms(1000);
-	led_write(0,0,0);
-	_delay_ms(1000);
-	message_handle();
 	while(1){
-		if(state & (1 << STATE_INTERUPT)){ // action is necessary (state interrupt bit is set)
+		if(STATE_INTERUPT_IS){ // action is necessary (state interrupt bit is set)
 			message_handle();
-			
-			/*if(!(state & (1 << STATE_MODULE))){ // If we are in TX mode change to RX mode, because transmission is done
-				rf95_set_rx();
-				state &= ~(1 << STATE_MODULE);
-			}else{
-				message_handle();
-			}*/
+			STATE_INTERUPT_CLR;
 		}
-		//if(spi_read_reg(RF95_12_IRQ_FLAGS) & 0xF0) led_write(0,1,0); 
-		_delay_ms(100);
+		if (1) {
+			//led_write(1,0,0);
+			rf95_set_rx();
+			//spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
+		}
+		_delay_ms(10);
 	}
 	//_delay_ms(5000);
 	//PORTB |= (1 << PB5);

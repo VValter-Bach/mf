@@ -8,7 +8,7 @@ LINKER=
 CPUTYPE=atmega328p
 FLASH=-R .eeprom -R .fuse -R .lock -R .signature
 OPTS=-s -fno-stack-protector -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-math-errno -fno-unroll-loops -fmerge-all-constants -fno-ident -fsingle-precision-constant -ffast-math -Wl,-z,norelro -Wl,--hash-style=gnu
-FLAGS=-std=c99 -mmcu=$(CPUTYPE) -Wall -Wextra -gdwarf-2 -O3 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -DF_CPU=16000000 -Wno-array-bounds -Werror
+FLAGS=-std=c99 -mmcu=$(CPUTYPE) -Wall -Wextra -O1 -funsigned-char -fpack-struct -fshort-enums -DF_CPU=16000000 -Werror
 all: clean bin/main.hex
 
 obj/%.o: %.c
