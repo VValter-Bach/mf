@@ -382,18 +382,21 @@ int main()
 	led_setup();
 	spi_setup();
 	_delay_ms(1000);
-	rf95_setup(0);
+	rf95_setup(1);
 	_delay_ms(1000);
+	rf95_send(data, 10);
 	while(1){
+		_delay_ms(1000);
+		rf95_send(data, 10);
 		if(STATE_INTERUPT_IS){ // action is necessary (state interrupt bit is set)
 			message_handle();
 			STATE_INTERUPT_CLR;
 		}
-		if (1) {
+		/*if (1) {
 			//led_write(1,0,0);
 			rf95_set_rx();
 			//spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
-		}
+		}*/
 		_delay_ms(10);
 	}
 	//_delay_ms(5000);
