@@ -126,7 +126,7 @@
 #define RF95_LNA_GAIN                              0xe0
 #define RF95_LNA_GAIN_G1                           0x20
 #define RF95_LNA_GAIN_G2                           0x40
-#define RF95_LNA_GAIN_G3                           0x60                
+#define RF95_LNA_GAIN_G3                           0x60
 #define RF95_LNA_GAIN_G4                           0x80
 #define RF95_LNA_GAIN_G5                           0xa0
 #define RF95_LNA_GAIN_G6                           0xc0
@@ -214,5 +214,7 @@
 // RH_RF95_REG_4D_PA_DAC                              0x4d
 #define RF95_PA_DAC_DISABLE                        0x04
 #define RF95_PA_DAC_ENABLE                         0x07
+
+#define RF95_REG_VERSION                           0x12
 
 #endif
