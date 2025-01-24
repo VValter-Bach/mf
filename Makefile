@@ -25,7 +25,6 @@ bin/main.hex: obj/main.elf
 format:
 	indent -linux *.c
 	rm -f *~
-test: obj/rf95.o obj/led.o
 
 push: clean bin/main.hex
 	avrdude -P /dev/ttyACM0 -c arduino -p m328p -U flash:w:bin/main.hex -v
