@@ -7,7 +7,7 @@
 // Author: Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2014 Mike McCauley
 // $Id: RH_RF95.h,v 1.26 2020/06/15 23:39:39 mikem Exp $
-// 
+//
 
 #ifndef RH_RF95_h
 #define RH_RF95_h
@@ -217,4 +217,6 @@
 
 #define RF95_REG_VERSION                           0x12
 
+#define DATA_LEN 10
+#define RF95_RX_BASE_ADDR 0x80
 #endif

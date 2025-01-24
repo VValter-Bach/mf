@@ -18,6 +18,13 @@
 #define SCK PB5
 
 
+/************************ LOCAL VARIABLES *************************/
+
+/**
+ * @brief This value is to store the offset from the base pointer
+ */
+uint8_t offset = 0;
+
 /********************* FUNCTIONS DECLARATION **********************/
 
 /**
@@ -25,18 +32,6 @@
  * the global data buffer
  */
 void rf95_receive();
-
-/**
- * @brief Sets the rf95 to receive, update the Interrupt to activate
- * on RX Done and changes the according bit in state
- */
-void rf95_set_rx();
-
-/**
- * @brief Sets the rf95 to transmit, updates the Interrupt to activate
- * on TX Done and changes the according bit in state
- */
-void rf95_set_tx();
 
 /**
  * @brief Spi function for sending and recieving data simultanly
@@ -124,25 +119,9 @@ void rf95_setup(_Bool tx){
 		}
 	}
 
-	if (tx) { // transmitting
-		spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY); // Changing to TX
-		spi_write_reg(RF95_40_DIO_MAPPING1, 0x40); // Interrupt on Tx Done
-	} else {  // recieving
-		spi_write_reg(RF95_01_OP_MODE, RF95_MODE_RXCONTINUOUS); // Changing to RX
-		spi_write_reg(RF95_40_DIO_MAPPING1, 0x00); // Interrupt on Rx Done
-	}
-
-	// TODO: uesless? spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);  // Setting Operation mode to Standby so i can change other registers
-	rv = spi_read_reg(RF95_01_OP_MODE);
-	if(!(rv & RF95_LONG_RANGE_MODE)){
-		ERROR(4, "OP_MODE wrong after setting to tx or rx");
-		while(1){
-			_delay_ms(100);
-		}
-	}
 
 	spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0); // Setting TX data base index to 0
-	spi_write_reg(RF95_0F_FIFO_RX_BASE_ADDR, 0x80); // Setting RX data base index to 128
+	spi_write_reg(RF95_0F_FIFO_RX_BASE_ADDR, RF95_RX_BASE_ADDR); // Setting RX data base index to 128
 	// Setting BW to 20,8 kHz Error codingrate to 4/5 and setting Implicit Header mode (no header)
 	spi_write_reg(RF95_1D_MODEM_CONFIG1, RF95_BW_20_8KHZ | RF95_CODING_RATE_4_5 | RF95_IMPLICIT_HEADER_MODE_ON);
 	// Setting spreading Factor (TODO: just middle value) and enabling CRC payload
@@ -151,21 +130,39 @@ void rf95_setup(_Bool tx){
 	spi_write_reg(RF95_26_MODEM_CONFIG3, RF95_LOW_DATA_RATE_OPTIMIZE | RF95_AGC_AUTO_ON);
 	// Setting Power Amplifyer to true, Max Power to 15 (TODO: useless??) and Output Power to 17 (0x0F)
 	spi_write_reg(RF95_09_PA_CONFIG, RF95_PA_SELECT | 0x70 | 0x0F); // Power setting
+
 	// Frequency calculation and setting
 	uint32_t frf = FREQUENCY / RF95_FSTEP;
 	spi_write_reg(RF95_06_FRF_MSB, (frf >> 16) & 0xFF);
 	spi_write_reg(RF95_07_FRF_MID, (frf >> 8) & 0xFF);
 	spi_write_reg(RF95_08_FRF_LSB, frf & 0xFF);
+
 	//Preamble Setting
 	spi_write_reg(RF95_20_PREAMBLE_MSB, (PREAMBLE >> 8) & 0xFF);
 	spi_write_reg(RF95_21_PREAMBLE_LSB, PREAMBLE & 0xFF);
 	spi_write_reg(RF95_4D_PA_DAC, 0x04); // Default setting
+
+	if (tx) { // transmitting
+		spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY | RF95_LONG_RANGE_MODE); // Changing to TX
+		spi_write_reg(RF95_40_DIO_MAPPING1, 0x40); // Interrupt on Tx Done
+	} else {  // recieving
+		spi_write_reg(RF95_01_OP_MODE, RF95_MODE_RXCONTINUOUS | RF95_LONG_RANGE_MODE); // Changing to RX
+		spi_write_reg(RF95_40_DIO_MAPPING1, 0x00); // Interrupt on Rx Done
+	}
+
+	rv = spi_read_reg(RF95_01_OP_MODE);
+	if(!(rv & RF95_LONG_RANGE_MODE)){
+		ERROR(4, "OP_MODE wrong after setting to tx or rx");
+		while(1){
+			_delay_ms(100);
+		}
+	}
+
 	sei(); // enabling iterrupt
 	_delay_ms(200);
-	//if(tx) rf95_set_tx(); TODO:
-	//else rf95_set_rx();
 	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 }
+
 
 /**
  * @brief Interrupt handler for RF95
@@ -187,30 +184,25 @@ void rf95_setup(_Bool tx){
  * @param data The data to send
  * @param len The length of the data
  */
-/*void rf95_send(uint8_t * data, uint8_t len){
-	state &= ~(1 << STATE_MODULE); // Clearing the Bit
-	spi_write_reg(RF95_01_OP_MODE, RF95_LONG_RANGE_MODE);
+void rf95_send(uint8_t * data, uint8_t len){
 	spi_write_reg(RF95_0D_FIFO_ADDR_PTR, 0);
-	spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0);
+	// TODO: might not be necessary spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0);
 	spi_write_n(RF95_00_FIFO, data, len);
-	spi_write_reg(RF95_22_PAYLOAD_LENGTH, len + 1);
+	spi_write_reg(RF95_22_PAYLOAD_LENGTH, len);
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_TX);
 }
 
-*/
 /**
  * @brief Copies the data recieved in the rf95
  * into the global data buffer
  */
-/*void rf95_receive(){
-	//data_len = spi_read_reg(RF95_13_RX_NB_BYTES); // reading length of the message
-	spi_write_reg(RF95_0D_FIFO_ADDR_PTR, spi_read_reg(RF95_10_FIFO_RX_CURRENT_ADDR)); // Reading packet address and setting reading address to it
-	spi_read_n(RF95_00_FIFO, data, 11); // Reading data in global data buffer
+void rf95_receive(uint8_t* data){
+	//spi_write_reg(RF95_0D_FIFO_ADDR_PTR, spi_read_reg(RF95_10_FIFO_RX_CURRENT_ADDR)); // Reading packet address and setting reading address to it
+	spi_read_n(RF95_00_FIFO, data, DATA_LEN); // Reading data in global data buffer
+	offset += DATA_LEN;
+	if (offset >= (120 - (2 * DATA_LEN)){
+		offset = 0;
+		spi_write_reg(RF95_10_FIFO_RX_CURRENT_ADDR, RF95_RX_BASE_ADDR);
+		spi_write_reg(RF95_0D_FIFO_ADDR_PTR, RF95_RX_BASE_ADDR);
+	}
 }
-void rf95_set_rx(){
-	state |= (1 << STATE_MODULE);
-}
-
-void rf95_set_tx(){
-}
-*/
