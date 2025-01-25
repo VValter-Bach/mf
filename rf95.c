@@ -200,7 +200,7 @@ void rf95_receive(uint8_t* data){
 	//spi_write_reg(RF95_0D_FIFO_ADDR_PTR, spi_read_reg(RF95_10_FIFO_RX_CURRENT_ADDR)); // Reading packet address and setting reading address to it
 	spi_read_n(RF95_00_FIFO, data, DATA_LEN); // Reading data in global data buffer
 	offset += DATA_LEN;
-	if (offset >= (120 - (2 * DATA_LEN)){
+	if (offset >= (120 - (2 * DATA_LEN))){
 		offset = 0;
 		spi_write_reg(RF95_10_FIFO_RX_CURRENT_ADDR, RF95_RX_BASE_ADDR);
 		spi_write_reg(RF95_0D_FIFO_ADDR_PTR, RF95_RX_BASE_ADDR);

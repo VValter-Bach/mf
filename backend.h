@@ -1,8 +1,20 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 
-//#include <stdlib.h>
 #include <stdint.h>
+#include <avr/io.h>
+
+#define RST PB1
+#define SS PB2
+#define MOSI PB3
+#define MISO PB4
+#define SCK PB5
+
+#define STEPS_MIN 69
+#define STEPS_MAX 119
+#define STEPS_AVG 94
+#define COUNTER_MAX 188
+#define DATA_MAX 40
 
 #define LED_COUNT 4
 #define RED PC0

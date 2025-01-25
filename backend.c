@@ -2,6 +2,7 @@
 #include "backend.h"
 
 #include <avr/io.h>
+#include <avr/interrupt.h>
 
 /************************* SPI ************************/
 void spi_setup();
@@ -123,75 +124,13 @@ void pwm_setup()
 	sei();			// enabling global interrupts
 }
 
-// TODO: Rework
-void set_speed(uint8_t s)
-{
-	if (s > 200)
-		steps = STEPS_MAX;
-	else if (s > 196)
-		steps = STEPS_MAX - 1;
-	else if (s > 192)
-		steps = STEPS_MAX - 2;
-	else if (s > 188)
-		steps = STEPS_MAX - 3;
-	else if (s > 184)
-		steps = STEPS_MAX - 4;
-	else if (s > 180)
-		steps = STEPS_MAX - 5;
-	else if (s > 176)
-		steps = STEPS_MAX - 6;
-	else if (s > 172)
-		steps = STEPS_MAX - 7;
-	else if (s > 168)
-		steps = STEPS_MAX - 8;
-	else if (s > 164)
-		steps = STEPS_MAX - 9;
-	else if (s > 160)
-		steps = STEPS_MAX - 10;
-	else if (s > 156)
-		steps = STEPS_MAX - 11;
-	else if (s > 152)
-		steps = STEPS_MAX - 12;
-	else if (s > 148)
-		steps = STEPS_MAX - 13;
-	else if (s > 144)
-		steps = STEPS_MAX - 14;
-	else if (s > 140)
-		steps = STEPS_MAX - 15;
-	else if (s > 136)
-		steps = STEPS_MAX - 16;
-	else if (s > 132)
-		steps = STEPS_MAX - 17;
-	else if (s > 128)
-		steps = STEPS_MAX - 18;
-	else if (s > 124)
-		steps = STEPS_MAX - 19;
-	else if (s > 120)
-		steps = STEPS_MAX - 20;
-	else if (s > 116)
-		steps = STEPS_MAX - 21;
-	else if (s > 112)
-		steps = STEPS_MAX - 22;
-	else if (s == 100)
-		steps = STEPS_AVG;
-	else
-		steps = STEPS_AVG;
-}
-
-
 /**
  * @brief Interrupt handler for TIMER0 Overflow
- * @details TODO: 
+ * @details TODO:
  */
 ISR(TIMER0_OVF_vect)
 {
-	step_counter++;
-	if (step_counter >= COUNTER_MAX) {
-		PORTD |= (1 << PD6);
-		step_counter = 0;
-	} else if (step_counter == steps) {
-		PORTD &= ~(1 << PD6);
-	}
+	led_toggle(BLU);
 }
 
 
