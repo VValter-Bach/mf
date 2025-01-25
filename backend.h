@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <avr/io.h>
+#include <stdio.h>
 
 #define RST PB1
 #define SS PB2
@@ -21,6 +22,11 @@
 #define YLW PC1
 #define GRN PC2
 #define BLU PC3
+
+/************************ UART ************************/
+void uart_setup();
+
+int uart_write_char(char c, FILE* stream);
 
 /************************* SPI ************************/
 void spi_setup();

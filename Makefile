@@ -9,7 +9,7 @@ CPUTYPE=atmega328p
 OBJ=obj/backend.o obj/rf95.o
 FLASH=-R .eeprom -R .fuse -R .lock -R .signature
 OPTS=-s -fno-stack-protector -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-math-errno -fno-unroll-loops -fmerge-all-constants -fno-ident -fsingle-precision-constant -ffast-math -Wl,-z,norelro -Wl,--hash-style=gnu
-FLAGS=-std=c99 -mmcu=$(CPUTYPE) -Wall -Wextra -O1 -funsigned-char -fpack-struct -fshort-enums -DF_CPU=16000000 -Werror
+FLAGS=-std=c99 -mmcu=$(CPUTYPE) -Wall -Wextra -O1 -funsigned-char -fpack-struct -fshort-enums -DF_CPU=16000000 -Werror -DDEBUG
 
 sender: bin/sender.hex
 	rm -f obj/*
@@ -35,8 +35,9 @@ obj/%.o: %.c
 #	rm -f *~
 
 
-push: clean bin/main.hex
-	avrdude -P /dev/ttyACM0 -c arduino -p m328p -U flash:w:bin/main.hex -v
+push:
+	avrdude -P /dev/ttyACM0 -c arduino -p m328p -U flash:w:bin/sender.hex -v
+	avrdude -P /dev/ttyACM1 -c arduino -p m328p -U flash:w:bin/reciever.hex -v
 
 pull:
 	avrdude -c arduino -p m328p -P /dev/ttyACM0 -D -U eeprom:r:bin/eeprom.hex -v

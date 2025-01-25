@@ -1,22 +1,26 @@
-// RH_RF95.h
-//
-// Definitions for HopeRF LoRa radios per:
-// http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf
-// http://www.hoperf.cn/upload/rfchip/RF96_97_98.pdf
-//
-// Author: Mike McCauley (mikem@airspayce.com)
-// Copyright (C) 2014 Mike McCauley
-// $Id: RH_RF95.h,v 1.26 2020/06/15 23:39:39 mikem Exp $
-//
-
 #ifndef RH_RF95_h
 #define RH_RF95_h
 
+#include <stdint.h>
+
 // The crystal oscillator frequency of the module
 #define RF95_FXOSC 32000000.0
+#define RF95_FSTEP  (RF95_FXOSC / 524288)
+#define DATA_LEN 4
+
+#ifdef SENDER
+#define RF95_RX_BASE_ADDR 0x80
+#elif RECIEVER
+#define RF95_RX_BASE_ADDR 0x08
+#else
+#error NOT SENDER NOR RECIEVER
+#endif
+
+void rf95_setup();
+void rf95_send(uint8_t * data, uint8_t len);
+void rf95_receive(uint8_t* data);
 
 // The Frequency Synthesizer step = RH_RF95_FXOSC / 2^^19
-#define RF95_FSTEP  (RF95_FXOSC / 524288)
 
 
 // Register names (LoRa Mode, from table 85)
@@ -217,6 +221,4 @@
 
 #define RF95_REG_VERSION                           0x12
 
-#define DATA_LEN 10
-#define RF95_RX_BASE_ADDR 0x80
 #endif

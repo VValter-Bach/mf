@@ -4,17 +4,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-/************************* SPI ************************/
-void spi_setup();
-void spi_write_reg(uint8_t address, uint8_t value);
-void spi_write_n(uint8_t address, uint8_t* data, uint8_t len);
-uint8_t spi_read_reg(uint8_t address);
-void spi_read_n(uint8_t address, uint8_t* data, uint8_t len);
-/************************* PWM ************************/
-void pwm_setup();
-void set_speed(uint8_t s);
-/************************* LED ************************/
-
 // ! How hard can i be
 
 /*********************** BACKEND **********************/
@@ -25,6 +14,25 @@ void set_speed(uint8_t s);
  * in Flames
 */
 
+/************************ UART ************************/
+
+void uart_setup(){
+	uint16_t baudrate = 9600;
+	uint16_t baud = (F_CPU / 8 / baudrate - 1) / 2; 
+	UBRR0H = (uint8_t) (baud >> 8);
+	UBRR0L = (uint8_t) (baud & 0x0ff);  
+	SET_BITS2(UCSR0C, UCSZ01, UCSZ00);
+	SET_BIT(UCSR0B, TXEN0);
+}
+
+int uart_write_char(char c, __attribute__((unused)) FILE* stream){
+	UDR0 = c;
+	while(!GET_BIT(UCSR0A, TXC0));
+	return 1;
+}
+
+
+
 /************************* SPI ************************/
 
 /**
@@ -33,9 +41,9 @@ void set_speed(uint8_t s);
  * enables SPI in Master mode and sets the sck rate to 1/16
  */
 void spi_setup(){
-	DDRB |= (1 << SS) | (1 << MOSI) | (1 << SCK) | (1 << RST); // setting SS | MOSI | SCK to out
-	SPCR |= (1 << SPE) | (1 << MSTR);// | (1 << SPR0);
-	PORTB |= (1 << SS) | (1 << RST);
+	SET_BITS4(DDRB, SS, MOSI, SCK, RST); // setting SS & MOSI & SCK & RST to output pins
+	SET_BITS2(SPCR, SPE, MSTR); // enables SPI in Master mode
+	SET_BITS2(PORTB, SS, RST); // pulling SS and RST high
 }
 
 
@@ -46,7 +54,7 @@ void spi_setup(){
  */
 uint8_t spi_transcieve(uint8_t data){
   SPDR = data;
-  while(!(SPSR & (1<<SPIF)));
+  while(!GET_BIT(SPSR, SPIF));
   return SPDR;
 }
 
@@ -57,10 +65,10 @@ uint8_t spi_transcieve(uint8_t data){
  * @param value The value to write
  */
 void spi_write_reg(uint8_t address, uint8_t value) {
-  PORTB &= ~(1 << SS); // Set SS to LOW
-  spi_transcieve(address | 0x80);   // Set write bit
-  spi_transcieve(value);
-  PORTB |= (1 << SS); // Set SS to HIGH
+  UN_SET_BIT(PORTB, SS); // pull SS to LOW
+  spi_transcieve(address | 0x80);   // set write bit in address
+  spi_transcieve(value); // write the value
+  SET_BIT(PORTB, SS); // pull SS to HIGH
 }
 
 /**
@@ -70,12 +78,12 @@ void spi_write_reg(uint8_t address, uint8_t value) {
  * @param len The length of data
  */
 void spi_write_n(uint8_t address, uint8_t* data, uint8_t len){
-	PORTB &= ~(1 << SS); // Set SS to LOW
-	spi_transcieve(address | 0x80);
+  	UN_SET_BIT(PORTB, SS); // pull SS to LOW
+	spi_transcieve(address | 0x80); // set write bit in address
 	for(uint8_t i = 0; i < len; i++){
 		spi_transcieve(data[i]);
 	}
-	PORTB |= (1 << SS);
+  	SET_BIT(PORTB, SS); // pull SS to HIGH
 }
 
 
@@ -85,11 +93,11 @@ void spi_write_n(uint8_t address, uint8_t* data, uint8_t len){
  * @return uint8_t The value which is read
  */
 uint8_t spi_read_reg(uint8_t address) {
-  PORTB &= ~(1 << SS); // Set SS to LOW
-  spi_transcieve(address & 0x7F);   // Clear write bit
-  uint8_t value = spi_transcieve(0xFF); // Dummy Byte
-  PORTB |= (1 << SS); // Set SS to HIGH
-  return value;
+  	UN_SET_BIT(PORTB, SS); // pull SS to LOW
+  	spi_transcieve(address & 0x7F);   // Clear write bit
+  	uint8_t value = spi_transcieve(0xFF); // Dummy Byte
+  	SET_BIT(PORTB, SS); // pull SS to HIGH
+  	return value;
 }
 
 
@@ -100,12 +108,12 @@ uint8_t spi_read_reg(uint8_t address) {
  * @param len The amount of bites to read from SPI and to write to the buffer
  */
 void spi_read_n(uint8_t address, uint8_t* data, uint8_t len){
-	PORTB &= ~(1 << SS); // Set SS to LOW
+  	UN_SET_BIT(PORTB, SS); // pull SS to LOW
 	spi_transcieve(address & 0x7F);
 	for(uint8_t i = 0; i < len; i++){
 		data[i] = spi_transcieve(0xFF); // sending dummy bytes
 	}
-	PORTB |= (1 << SS); // Set SS to HIGH
+  	SET_BIT(PORTB, SS); // pull SS to HIGH
 }
 
 /************************* PWM ************************/

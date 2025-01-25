@@ -1,6 +1,12 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include <stdint.h>
+
+extern uint8_t state;
+
+#define S7 7
+
 #define TOGGLE_BIT(REG, IND) \
         REG ^= ( 1 << IND )
 
@@ -22,8 +28,31 @@
 #define SET_BITS4(REG, IND1, IND2, IND3, IND4) \
         REG |= ( 1 << IND1 ) | ( 1 << IND2 ) | ( 1 << IND3 ) | ( 1 << IND4 )
 
+#define GET_BIT(REG, IND) \
+        (REG & ( 1 << IND ))
 
-#define ERROR(CODE, STRING) \
-	led_set(CODE); // TODO: Prolong
+#ifndef DEBUG
+
+#define ERROR(CODE, ...) \
+	led_set(CODE); \
+        while (1) { nop; }
+
+#define PRINT(...)
+
+#define INIT()
+
+#else
+
+#define ERROR(CODE, ...) \
+        led_set(CODE); \
+        while (1) { printf(__VA_ARGS__); _delay_ms(1000);}
+
+#define PRINT(...) printf(__VA_ARGS__)
+
+#define INIT() \
+	uart_setup(); \
+	stdout = &uart_out;
+
+#endif
 
 #endif // MAIN_H
