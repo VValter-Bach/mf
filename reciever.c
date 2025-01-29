@@ -21,6 +21,7 @@ int main()
 	while(1){
 		if (GET_BIT(state, S7)){
 			rf95_receive(data);
+			UN_SET_BIT(state, S7);
 		}
 		led_toggle(GRN);
 	}
