@@ -15,8 +15,6 @@ void rf95_receive(uint8_t* data);
 // The Frequency Synthesizer step = RH_RF95_FXOSC / 2^^19
 
 
-#ifdef LORA
-
 #ifdef SENDER
 #define RF95_RX_BASE_ADDR 0x80
 #elif RECIEVER
@@ -24,6 +22,7 @@ void rf95_receive(uint8_t* data);
 #else
 #error NOT SENDER NOR RECIEVER
 #endif
+
 // Register names (LoRa Mode, from table 85)
 #define RF95_00_FIFO                                0x00
 #define RF95_01_OP_MODE                             0x01
@@ -222,8 +221,6 @@ void rf95_receive(uint8_t* data);
 
 #define RF95_REG_VERSION                           0x12
 
-#elif FSK
-
 #define RF95_00_FIFO                                0x00
 #define RF95_01_OP_MODE                             0x01
 #define RF95_02_BITRATE_MSB							0x02
@@ -301,8 +298,63 @@ void rf95_receive(uint8_t* data);
 #define RF95_64_AGC_THRESH3                         0x64
 #define RF95_70_PLL									0x70
 
-#else
-#error NOT FSK NOR LORA
-#endif // LORA OR FSK
+// RF95_01_OP_MODE                             0x01
+#define RF95_MODULATION_FSK							0x00
+#define RF95_MODULATION_OOK							0x20
+#define RF95_LOW_FREQUENCY_MODE						0x08
+#define RF95_MODE_SLEEP								0x00
+#define RF95_MODE_STDBY								0x01
+#define RF95_MODE_FSTX								0x02
+#define RF95_MODE_TX								0x03
+#define RF95_MODE_FSRX								0x04
+#define RF95_MODE_RX								0x05
+
+// RF95_09_PA_CONFIG                           0x09
+#define RF95_PA_SELECT								0x80
+
+// RF95_0A_PA_RAMP                             0x0a
+#define RF95_FSK_MOD_SHAPE_NONE						0x00
+#define RF95_FSK_MOD_SHAPE_GAUS1					0x20
+#define RF95_FSK_MOD_SHAPE_GAUS0_5					0x40
+#define RF95_FSK_MOD_SHAPE_GAUS0_3					0x60
+#define RF95_OOK_MOD_SHAPE_NONE						0x00
+#define RF95_OOK_MOD_SHAPE_FCUT						0x20
+#define RF95_OOK_MOD_SHAPE_FCUT2					0x40
+#define RF95_PA_RAMP_3_4MS							0x00
+#define RF95_PA_RAMP_2MS							0x01
+#define RF95_PA_RAMP_1MS							0x02
+#define RF95_PA_RAMP_500US							0x03
+#define RF95_PA_RAMP_250US							0x04
+#define RF95_PA_RAMP_125US							0x05
+#define RF95_PA_RAMP_100US							0x06
+#define RF95_PA_RAMP_62US							0x07
+#define RF95_PA_RAMP_50US							0x08
+#define RF95_PA_RAMP_40US							0x09
+#define RF95_PA_RAMP_31US							0x0a
+#define RF95_PA_RAMP_25US							0x0b
+#define RF95_PA_RAMP_20US							0x0c
+#define RF95_PA_RAMP_15US							0x0d
+#define RF95_PA_RAMP_12US							0x0e
+#define RF95_PA_RAMP_10US							0x0f
+
+
+// RF95_0D_RX_CONFIG							0x0d
+
+#define RF95_RX_RESTART_COLLISION					0x80
+#define RF95_RX_RESTART_WITHOUT_PLL					0x40
+#define RF95_RX_RESTART_WITH_PLL					0x20
+#define RF95_RX_AFC_AUTO_ON							0x10
+#define RF95_RX_AGC_AUTO_ON							0x08
+
+// RF95_0E_RSSI_CONFIG							0x0e
+
+#define RF95_RSSI_SAMPLES_2							0x00
+#define RF95_RSSI_SAMPLES_4							0x01
+#define RF95_RSSI_SAMPLES_8							0x02
+#define RF95_RSSI_SAMPLES_16						0x03
+#define RF95_RSSI_SAMPLES_32						0x04
+#define RF95_RSSI_SAMPLES_64						0x05
+#define RF95_RSSI_SAMPLES_128						0x06
+#define RF95_RSSI_SAMPLES_256						0x07
 
 #endif // RH_RF95_H
