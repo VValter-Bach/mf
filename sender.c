@@ -13,16 +13,22 @@ uint8_t state = 0;
 
 int main()
 {
-	uint8_t data[DATA_LEN] = {1,2,3,4};
+	uint8_t data[DATA_LEN] = {1,2};
 	INIT();
 	led_setup();
 	spi_setup();
 	rf95_setup();
 	SET_BIT(state, S7);
+	int i = 0;
 	while(1){
 		if (GET_BIT(state, S7)){
 			rf95_send(data, DATA_LEN);
 			UN_SET_BIT(state, S7);
+			i++;
+		}
+		if ( i > 10) {
+			i = 0;
+			led_toggle(GRN);
 		}
 		led_toggle(RED);
 	}

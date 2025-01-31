@@ -8,7 +8,7 @@
 #include "backend.h"
 
 #define FREQUENCY 434000000.0
-#define PREAMBLE 8
+#define PREAMBLE 0
 
 // Pin definitions
 #define RST PB1
@@ -74,7 +74,8 @@ void rf95_setup(){
 	spi_write_reg(RF95_26_MODEM_CONFIG3, RF95_LOW_DATA_RATE_OPTIMIZE | RF95_AGC_AUTO_ON);
 	// Setting Power Amplifyer to true, Max Power to 15 (TODO: useless??) and Output Power to 17 (0x0F)
 	spi_write_reg(RF95_09_PA_CONFIG, RF95_PA_SELECT | 0x70 | 0x0F); // Power setting
-
+	// Setting payload length
+	spi_write_reg(RF95_22_PAYLOAD_LENGTH, DATA_LEN);
 	// Frequency calculation and setting
 	uint32_t frf = FREQUENCY / RF95_FSTEP;
 	spi_write_reg(RF95_06_FRF_MSB, (frf >> 16) & 0xFF);
@@ -137,7 +138,6 @@ void rf95_send(uint8_t * data, uint8_t len){
 	spi_write_reg(RF95_0D_FIFO_ADDR_PTR, 0);
 	// TODO: might not be necessary spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0);
 	spi_write_n(RF95_00_FIFO, data, len);
-	spi_write_reg(RF95_22_PAYLOAD_LENGTH, len);
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_TX);
 }
 
