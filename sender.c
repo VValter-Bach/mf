@@ -17,13 +17,18 @@ int main()
 	INIT();
 	led_setup();
 	spi_setup();
-	rf95_setup();
+	rf95_setup_fsk();
 	SET_BIT(state, S7);
 	while(1){
-		if (GET_BIT(state, S7)){
+		/*if (GET_BIT(state, S7)){
 			rf95_send(data, DATA_LEN);
 			UN_SET_BIT(state, S7);
-		}
+			led_toggle(YLW);
+		}*/
+		rf95_send(data, DATA_LEN);
+		uint8_t rv = spi_read_reg(0x3f);
+		if(rv & 0x04) led_toggle(BLU);
+		_delay_ms(1500);
 		led_toggle(RED);
 	}
 }

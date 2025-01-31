@@ -33,7 +33,7 @@ uint8_t offset = 0;
  * @brief Setup for the rf95, enables the INT0_vect interrupt, checking and setting bunch of registers
  * @param tx Non-0 vaue for starting in transmit mode!
  */
-void rf95_setup(){
+void rf95_setup_lora(){
 	// Enabling interrupt for G0 / DIO0
 	SET_BIT(EIMSK, INT0); // set INT0-Interrupt-Flag
 	SET_BITS2(EICRA, ISC01, ISC00); // set Interrupt setting for rising Edge
@@ -108,6 +108,60 @@ void rf95_setup(){
 	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 }
 
+void rf95_setup_fsk(){
+
+	UN_SET_BIT(PORTB, RST); // resetting by pulling RST pin to low for 20ms
+	_delay_ms(20);
+	SET_BIT(PORTB, RST); // booting rf95 module up again
+	_delay_ms(100);
+
+	// Checking Version of Module to see if SPI is working
+	uint8_t rv = spi_read_reg(RF95_42_VERSION); // verifying the Version
+	if(rv != RF95_REG_VERSION){
+		ERROR(1, "Version wrong: %d\n", rv);
+	}
+
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_SLEEP); // putting rf95 to sleep and setting to FSK at the same time
+	_delay_ms(20); // Wait to apply
+	rv = spi_read_reg(RF95_01_OP_MODE); // verifying the OP_MODE
+	if(rv != 0x00){
+		ERROR(2, "OP_MODE wrong after setting to sleep: %d", rv);
+	}
+	// Formula from pdf is Fdev = 61 * fdev
+	// setting Frequency deviation in FSK
+	uint16_t fdev = 377; // 377 * 61 = 23kHz frequency deviation
+	spi_write_reg(RF95_04_FDEV_MSB, (fdev >> 8) & 0x3f);
+	spi_write_reg(RF95_05_FDEV_LSB, fdev & 0xff);
+
+	// setting to Frequency to 434Mhz
+	//uint32_t frf = FREQUENCY / RF95_FSTEP;
+	//spi_write_reg(RF95_06_FRF_MSB, (frf >> 16) & 0xFF);
+	//spi_write_reg(RF95_07_FRF_MID, (frf >> 8) & 0xFF);
+	//spi_write_reg(RF95_08_FRF_LSB, frf & 0xFF);
+
+	// Setting Power Amplifyer to true, Max Power to 15 (TODO: useless??) and Output Power to 17 (0x0F)
+	spi_write_reg(RF95_09_PA_CONFIG, RF95_PA_SELECT | 0x70 | 0x0F); // Power setting
+
+	spi_write_reg(RF95_0A_PA_RAMP, 0x6f);
+	// Setting Preamble length
+	spi_write_reg(RF95_25_PREAMBLE_MSB, 0x00);
+	spi_write_reg(RF95_26_PREAMBLE_LSB, 0x03);
+
+	spi_write_reg(RF95_30_PACKET_CONFIG1, 0x40);
+	spi_write_reg(RF95_31_PACKET_CONFIG2, 0x40);
+	spi_write_reg(RF95_32_PAYLOAD_LENGTH, 0x02);
+
+	#ifdef SENDER
+	spi_write_reg(RF95_40_DIO_MAPPING1, 0x00); // Interrupt on Tx Done
+	spi_write_reg(RF95_36_SEQ_CONFIG1, 0x80 | 0x10 | 0x40); 
+	#elif RECIEVER
+
+	#else
+	#error NOT SENDER NOR RECIEVER
+	#endif
+
+}
+
 #ifdef SENDER
 /**
  * @brief Interrupt handler for RF95
@@ -116,7 +170,7 @@ void rf95_setup(){
  */
 ISR(INT0_vect) {
 	led_toggle(BLU);
-	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
+	//spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 	SET_BIT(state, S7);
 }
 #elif RECIEVER
@@ -134,10 +188,10 @@ ISR(INT0_vect) {
  * @param len The length of the data
  */
 void rf95_send(uint8_t * data, uint8_t len){
-	spi_write_reg(RF95_0D_FIFO_ADDR_PTR, 0);
+	// spi_write_reg(RF95_0D_FIFO_ADDR_PTR, 0);
 	// TODO: might not be necessary spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0);
 	spi_write_n(RF95_00_FIFO, data, len);
-	spi_write_reg(RF95_22_PAYLOAD_LENGTH, len);
+	// spi_write_reg(RF95_22_PAYLOAD_LENGTH, len);
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_TX);
 }
 

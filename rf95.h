@@ -8,7 +8,8 @@
 #define RF95_FSTEP  (RF95_FXOSC / 524288)
 #define DATA_LEN 4
 
-void rf95_setup();
+void rf95_setup_lora();
+void rf95_setup_fsk();
 void rf95_send(uint8_t * data, uint8_t len);
 void rf95_receive(uint8_t* data);
 
