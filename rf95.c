@@ -127,6 +127,9 @@ void rf95_setup_fsk(){
 	if(rv != 0x00){
 		ERROR(2, "OP_MODE wrong after setting to sleep: %d", rv);
 	}
+
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY); // putting rf95 to sleep and setting to FSK at the same time
+	_delay_ms(500);
 	// Formula from pdf is Fdev = 61 * fdev
 	// setting Frequency deviation in FSK
 	uint16_t fdev = 377; // 377 * 61 = 23kHz frequency deviation
@@ -147,13 +150,16 @@ void rf95_setup_fsk(){
 	spi_write_reg(RF95_25_PREAMBLE_MSB, 0x00);
 	spi_write_reg(RF95_26_PREAMBLE_LSB, 0x03);
 
-	spi_write_reg(RF95_30_PACKET_CONFIG1, 0x40);
+	spi_write_reg(RF95_30_PACKET_CONFIG1, 0x00);
 	spi_write_reg(RF95_31_PACKET_CONFIG2, 0x40);
-	spi_write_reg(RF95_32_PAYLOAD_LENGTH, 0x02);
+	spi_write_reg(RF95_32_PAYLOAD_LENGTH, DATA_LEN);
+	spi_write_reg(RF95_35_FIFO_THRESH, 0x01);
 
 	#ifdef SENDER
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);
 	spi_write_reg(RF95_40_DIO_MAPPING1, 0x00); // Interrupt on Tx Done
-	spi_write_reg(RF95_36_SEQ_CONFIG1, 0x80 | 0x10 | 0x40); 
+	//spi_write_reg(RF95_36_SEQ_CONFIG1, 0x80 | 0x10 | 0x40); 
+	spi_write_reg(RF95_36_SEQ_CONFIG1, 0x40);
 	#elif RECIEVER
 
 	#else
@@ -188,11 +194,15 @@ ISR(INT0_vect) {
  * @param len The length of the data
  */
 void rf95_send(uint8_t * data, uint8_t len){
+	
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_TX);
+	while(!(spi_read_reg(0x3e) & 0x20));
+	led_toggle(GRN);
 	// spi_write_reg(RF95_0D_FIFO_ADDR_PTR, 0);
 	// TODO: might not be necessary spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0);
 	spi_write_n(RF95_00_FIFO, data, len);
 	// spi_write_reg(RF95_22_PAYLOAD_LENGTH, len);
-	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_TX);
 }
 
 /**
