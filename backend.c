@@ -4,6 +4,9 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#define BAUD 9600
+#include <util/setbaud.h>
+
 // ! How hard can i be
 
 /*********************** BACKEND **********************/
@@ -17,18 +20,19 @@
 /************************ UART ************************/
 
 void uart_setup(){
-	uint16_t baudrate = 9600;
-	uint16_t baud = (F_CPU / 8 / baudrate - 1) / 2; 
-	UBRR0H = (uint8_t) (baud >> 8);
-	UBRR0L = (uint8_t) (baud & 0x0ff);  
+	UBRR0H = UBRRH_VALUE;
+	UBRR0L = UBRRL_VALUE;
 	SET_BITS2(UCSR0C, UCSZ01, UCSZ00);
 	SET_BIT(UCSR0B, TXEN0);
 }
 
 int uart_write_char(char c, __attribute__((unused)) FILE* stream){
+    if (c == '\n') {
+        uart_write_char('\r', stream);
+    }
+	loop_until_bit_is_set(UCSR0A, UDRE0);
 	UDR0 = c;
-	while(!GET_BIT(UCSR0A, TXC0));
-	return 1;
+	return 0;
 }
 
 
@@ -138,7 +142,7 @@ void pwm_setup()
  */
 ISR(TIMER0_OVF_vect)
 {
-	led_toggle(BLU);
+	//led_toggle(BLU);
 }
 
 

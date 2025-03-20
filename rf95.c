@@ -116,7 +116,7 @@ void rf95_setup(){
  * otherwise we clear the flags on the rf95
  */
 ISR(INT0_vect) {
-	led_toggle(BLU);
+	//led_toggle(BLU);
 	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 	SET_BIT(state, S7);
 }

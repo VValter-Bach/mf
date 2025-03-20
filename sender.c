@@ -20,7 +20,13 @@ int main()
 	rf95_setup();
 	SET_BIT(state, S7);
 	int i = 0;
+	uint8_t value;
 	while(1){
+		value = PORTD;
+		//value = value >> 3;
+		PRINT("TEST %x\n",value);
+		_delay_ms(1000);
+
 		if (GET_BIT(state, S7)){
 			rf95_send(data, DATA_LEN);
 			UN_SET_BIT(state, S7);
@@ -30,7 +36,6 @@ int main()
 			i = 0;
 			led_toggle(GRN);
 		}
-		led_toggle(RED);
+		//led_toggle(RED);
 	}
 }
-
