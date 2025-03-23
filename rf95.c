@@ -107,6 +107,82 @@ void rf95_setup_lora(){
 	_delay_ms(200);
 	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 }
+/*!
+ * \brief Scaling factor used to perform fixed-point operations
+ */
+#define SX1276_PLL_STEP_SHIFT_AMOUNT                ( 8 )
+/*!
+ * \brief Internal frequency of the radio
+ */
+#define SX1276_XTAL_FREQ                            32000000UL
+
+/*!
+ * \brief PLL step - scaled with SX1276_PLL_STEP_SHIFT_AMOUNT
+ */
+#define SX1276_PLL_STEP_SCALED                      ( SX1276_XTAL_FREQ >> ( 19 - SX1276_PLL_STEP_SHIFT_AMOUNT ) )
+
+static uint32_t SX1276ConvertPllStepToFreqInHz( uint32_t pllSteps )
+{
+    uint32_t freqInHzInt;
+    uint32_t freqInHzFrac;
+    
+    // freqInHz = pllSteps * ( SX1276_XTAL_FREQ / 2^19 )
+    // Get integer and fractional parts of the frequency computed with a PLL step scaled value
+    freqInHzInt = pllSteps >> SX1276_PLL_STEP_SHIFT_AMOUNT;
+    freqInHzFrac = pllSteps - ( freqInHzInt << SX1276_PLL_STEP_SHIFT_AMOUNT );
+    
+    // Apply the scaling factor to retrieve a frequency in Hz (+ ceiling)
+    return freqInHzInt * SX1276_PLL_STEP_SCALED + 
+           ( ( freqInHzFrac * SX1276_PLL_STEP_SCALED + ( 128 ) ) >> SX1276_PLL_STEP_SHIFT_AMOUNT );
+}
+
+static uint32_t SX1276ConvertFreqInHzToPllStep( uint32_t freqInHz )
+{
+    uint32_t stepsInt;
+    uint32_t stepsFrac;
+
+    // pllSteps = freqInHz / (SX1276_XTAL_FREQ / 2^19 )
+    // Get integer and fractional parts of the frequency computed with a PLL step scaled value
+    stepsInt = freqInHz / SX1276_PLL_STEP_SCALED;
+    stepsFrac = freqInHz - ( stepsInt * SX1276_PLL_STEP_SCALED );
+    
+    // Apply the scaling factor to retrieve a frequency in Hz (+ ceiling)
+    return ( stepsInt << SX1276_PLL_STEP_SHIFT_AMOUNT ) + 
+           ( ( ( stepsFrac << SX1276_PLL_STEP_SHIFT_AMOUNT ) + ( SX1276_PLL_STEP_SCALED >> 1 ) ) /
+             SX1276_PLL_STEP_SCALED );
+}
+
+
+void rf95_chain_calibration(){
+	uint8_t regPaConfigInitVal;
+    uint32_t initialFreq1, initialFreq2;
+	regPaConfigInitVal = spi_read_reg(RF95_09_PA_CONFIG);
+	initialFreq1 = (uint32_t)(spi_read_reg(RF95_06_FRF_MSB)) << 16 | (uint32_t)(spi_read_reg(RF95_07_FRF_MID)) << 8 | spi_read_reg(RF95_08_FRF_LSB);
+	initialFreq2 = SX1276ConvertPllStepToFreqInHz(initialFreq1);
+	PRINT("InitFreq: %ld\n", initialFreq2);
+	spi_write_reg(RF95_09_PA_CONFIG, 0x00);
+	spi_write_reg(RF95_3B_IMAGE_CAL, (spi_read_reg(RF95_3B_IMAGE_CAL) & 0xBF) | 0x40);
+	while (spi_read_reg(RF95_3B_IMAGE_CAL) & 0x20){
+		_delay_ms(20);
+		PRINT("CALIBRATING LF");
+	}
+	
+	initialFreq2 = SX1276ConvertFreqInHzToPllStep( 868000000 );
+	spi_write_reg(RF95_06_FRF_MSB, (initialFreq2 >> 16) & 0xFF);
+	spi_write_reg(RF95_07_FRF_MID, (initialFreq2 >> 8) & 0xFF);
+	spi_write_reg(RF95_08_FRF_LSB, initialFreq2 & 0xFF);
+
+	spi_write_reg(RF95_3B_IMAGE_CAL, (spi_read_reg(RF95_3B_IMAGE_CAL) & 0xBF) | 0x40);
+	while (spi_read_reg(RF95_3B_IMAGE_CAL) & 0x20){
+		_delay_ms(50);
+		PRINT("CALIBRATING HF");
+	}
+
+	spi_write_reg(RF95_09_PA_CONFIG, regPaConfigInitVal);
+	spi_write_reg(RF95_06_FRF_MSB, (initialFreq1 >> 16) & 0xFF);
+	spi_write_reg(RF95_07_FRF_MID, (initialFreq1 >> 8) & 0xFF);
+	spi_write_reg(RF95_08_FRF_LSB, initialFreq1 & 0xFF);
+}
 
 void rf95_setup_fsk(){
 
@@ -121,14 +197,32 @@ void rf95_setup_fsk(){
 		ERROR(1, "Version wrong: %d\n", rv);
 	}
 
+	rf95_chain_calibration();
+
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_SLEEP); // putting rf95 to sleep and setting to FSK at the same time
+	spi_write_reg(RF95_0C_LNA, 0x23);
+	spi_write_reg(RF95_0D_RX_CONFIG,0x1E);
+	spi_write_reg(RF95_0E_RSSI_CONFIG,0xD2);
+	spi_write_reg(RF95_1A_AFC_FEI,0x01);
+	spi_write_reg(RF95_1F_PREAMBLE_DETECT,0xAA);
+	spi_write_reg(RF95_24_OSC,0x07);
+	spi_write_reg(RF95_27_SYNC_CONFIG,0x12);
+	spi_write_reg(RF95_28_SYNC_VALUE1,0xC1);
+	spi_write_reg(RF95_29_SYNC_VALUE2,0x94);
+	spi_write_reg(RF95_2A_SYNC_VALUE3,0xC1);
+	spi_write_reg(RF95_30_PACKET_CONFIG1,0xD8);
+	spi_write_reg(RF95_35_FIFO_THRESH,0x9F);
+	spi_write_reg(RF95_3B_IMAGE_CAL,0x02);
+	spi_write_reg(RF95_40_DIO_MAPPING1,0x00);
+	spi_write_reg(RF95_41_DIO_MAPPING2,0x30);
+	//spi_write_reg(,);
 	_delay_ms(20); // Wait to apply
 	rv = spi_read_reg(RF95_01_OP_MODE); // verifying the OP_MODE
 	if(rv != 0x00){
 		ERROR(2, "OP_MODE wrong after setting to sleep: %d", rv);
 	}
 
-	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY); // putting rf95 to sleep and setting to FSK at the same time
+	//spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY); // putting rf95 to sleep and setting to FSK at the same time
 	_delay_ms(500);
 	// Formula from pdf is Fdev = 61 * fdev
 	// setting Frequency deviation in FSK
@@ -145,7 +239,7 @@ void rf95_setup_fsk(){
 	// Setting Power Amplifyer to true, Max Power to 15 (TODO: useless??) and Output Power to 17 (0x0F)
 	spi_write_reg(RF95_09_PA_CONFIG, RF95_PA_SELECT | 0x70 | 0x0F); // Power setting
 
-	spi_write_reg(RF95_0A_PA_RAMP, 0x6f);
+	//spi_write_reg(RF95_0A_PA_RAMP, 0x6f);
 	// Setting Preamble length
 	spi_write_reg(RF95_25_PREAMBLE_MSB, 0x00);
 	spi_write_reg(RF95_26_PREAMBLE_LSB, 0x03);
