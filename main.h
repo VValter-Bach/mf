@@ -51,7 +51,14 @@ extern uint8_t state;
 
 #define INIT() \
 	uart_setup(); \
-	stdout = &uart_out;
+	stdout = &uart_out; \
+        PRINT("Starting in: 3\n"); \
+        _delay_ms(1000); \
+        PRINT("Starting in: 2\n"); \
+        _delay_ms(1000); \
+        PRINT("Starting in: 1\n"); \
+        _delay_ms(1000); \
+        PRINT("Launch\n");
 
 #endif
 

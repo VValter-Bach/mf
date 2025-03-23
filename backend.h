@@ -28,6 +28,7 @@ void uart_setup();
 
 int uart_write_char(char c, FILE* stream);
 
+
 /************************* SPI ************************/
 void spi_setup();
 
@@ -52,5 +53,6 @@ void led_setup();
 void led_set(uint8_t bitmask);
 
 void led_toggle(uint8_t color);
+
 
 #endif // BACKEND_H
