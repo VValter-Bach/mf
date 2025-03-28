@@ -272,7 +272,7 @@ void rf95_setup_fsk(){
 	//spi_write_reg(RF95_35_FIFO_THRESH, 0x01);
 
 	#ifdef SENDER
-	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY | RF95_LOW_FREQUENCY_MODE);
 	//spi_write_reg(RF95_40_DIO_MAPPING1, 0x00); // Interrupt on Tx Done
 	//spi_write_reg(RF95_36_SEQ_CONFIG1, 0x80 | 0x10 | 0x40); 
 	//spi_write_reg(RF95_36_SEQ_CONFIG1, 0x40);
@@ -291,10 +291,11 @@ void rf95_setup_fsk(){
  * otherwise we clear the flags on the rf95
  */
 ISR(INT0_vect) {
-	PRINT("TEST\n");
 	led_toggle(BLU);
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY | RF95_LOW_FREQUENCY_MODE);
 	//spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 	SET_BIT(state, S7);
+	PRINT("TX-Ready(%X)\n", state);
 }
 #elif RECIEVER
 ISR(INT0_vect) {

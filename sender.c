@@ -33,21 +33,26 @@ int main()
 	SET_BIT(state, S7);
 	_delay_ms(1000);
 	sei();
-	rf95_send(data, DATA_LEN);
+	//rf95_send(data, DATA_LEN);
+	int i = 0;
 	while(1){
-		//if (GET_BIT(state, S7)){
-		//	UN_SET_BIT(state, S7);
-		//	led_toggle(YLW);
-		//}
+		if (GET_BIT(state, S7)){
+			UN_SET_BIT(state, S7);
+			PRINT("STATE:%X\n", spi_read_reg(0x01));
+			led_toggle(YLW);
+			rf95_send(data, DATA_LEN);
+		}
+		//PRINT("state: %X\n", state);
 		//uint8_t rv = spi_read_reg(0x3f);
 		//if(rv & 0x04) led_toggle(BLU);
-		_delay_ms(1500);
-		led_toggle(RED);
+		//_delay_ms(500);
+		//led_toggle(RED);
 		//rf95_send(data, DATA_LEN);
 		//if (GET_BIT(state, S7)){
 			//rf95_send(data, DATA_LEN);
 			//UN_SET_BIT(state, S7);
 		//}
+		i++;
 		if ( i > 100) {
 			i = 0;
 			int32_t s = 1024 - AnalogRead(5);
@@ -69,7 +74,7 @@ int main()
 			//PRINT("ANGLE: %8d%8d\n", data[0], data[1]);
 			//PRINT("s,d,l: %8ld:%8ld:%8ld:%8d->%8d:%8d\n",s,d,l,(int)(stretch*100.0f),s2,d2);
 			//led_toggle(GRN);
-			_delay_ms(1000);
+			//_delay_ms(1000);
 		}
 		//led_toggle(RED);
 	}
