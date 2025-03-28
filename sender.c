@@ -34,11 +34,12 @@ int main()
 	_delay_ms(1000);
 	sei();
 	//rf95_send(data, DATA_LEN);
-	int i = 0;
+	uint32_t i = 0;
 	while(1){
 		if (GET_BIT(state, S7)){
 			UN_SET_BIT(state, S7);
-			PRINT("STATE:%X\n", spi_read_reg(0x01));
+			_delay_ms(50);
+			//PRINT("STATE:%X\n", spi_read_reg(0x01));
 			led_toggle(YLW);
 			rf95_send(data, DATA_LEN);
 		}
@@ -52,8 +53,8 @@ int main()
 			//rf95_send(data, DATA_LEN);
 			//UN_SET_BIT(state, S7);
 		//}
-		//i++;
-		if ( i > 100) {
+		i++;
+		if ( i > 1000000) {
 			i = 0;
 			int32_t s = 1024 - AnalogRead(5);
 			 __attribute__((unused)) int16_t s2 = 0, d2 = 0;
@@ -62,7 +63,7 @@ int main()
 			d = d - 512;
 			uint32_t l = sqrt(s*s + d*d);
 			double stretch = 0.0;
-			if (l > 500){stretch = 750.0f / (double)l;
+			if (l > 450){stretch = 750.0f / (double)l;
 				s2 = s * stretch;
 				d2 = d * stretch;
 			} else {
@@ -71,7 +72,7 @@ int main()
 			}
 			data[0] = (s2 + 750) * 0.17f;
 			data[1] = (d2 + 750) * 0.17f;
-			//PRINT("ANGLE: %8d%8d\n", data[0], data[1]);
+			//PRINT("DATA: %8d%8d\n", data[0], data[1]);
 			//PRINT("s,d,l: %8ld:%8ld:%8ld:%8d->%8d:%8d\n",s,d,l,(int)(stretch*100.0f),s2,d2);
 			//led_toggle(GRN);
 			//_delay_ms(1000);

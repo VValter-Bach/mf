@@ -223,8 +223,7 @@ void rf95_setup_fsk(){
 	spi_write_reg(RF95_3B_IMAGE_CAL,0x02);
 	spi_write_reg(RF95_40_DIO_MAPPING1,0x00);
 	spi_write_reg(RF95_41_DIO_MAPPING2,0x30);
-	//spi_write_reg(RF95_23_RX_DELAY, 0x40); // TOOD: MIGHT BE USELESS
-	//spi_write_reg(,);
+
 	_delay_ms(20); // Wait to apply
 	rv = spi_read_reg(RF95_01_OP_MODE); // verifying the OP_MODE
 	if(rv != (RF95_LOW_FREQUENCY_MODE | RF95_MODE_STDBY)){
@@ -250,25 +249,14 @@ void rf95_setup_fsk(){
 	//spi_write_reg(RF95_07_FRF_MID, (frf >> 8) & 0xFF);
 	//spi_write_reg(RF95_08_FRF_LSB, frf & 0xFF);
 
-	// Setting Power Amplifyer to true, Max Power to 15 (TODO: useless??) and Output Power to 17 (0x0F)
-
-	//spi_write_reg(RF95_0A_PA_RAMP, 0x6f);
+	// spi_write_reg(RF95_0A_PA_RAMP, 0x6f);
 	// Setting Preamble length
 	spi_write_reg(RF95_25_PREAMBLE_MSB, 0x00);
-	spi_write_reg(RF95_26_PREAMBLE_LSB, 0x0F);
-	/*
-	0b 0000 0000
-	0x00
-	0x
-	8 = 0b1000 = 0x8
-	6 = 0b0110 = 0x6
-	9 = 0b1001 = 0x9
-	10= 0b1010 = 0xA
-	*/
+	spi_write_reg(RF95_26_PREAMBLE_LSB, 0x02);
 
 	spi_write_reg(RF95_30_PACKET_CONFIG1, spi_read_reg(RF95_30_PACKET_CONFIG1) & 0x6F);
 	spi_write_reg(RF95_31_PACKET_CONFIG2, spi_read_reg(RF95_31_PACKET_CONFIG2) | 0x40);
-	//spi_write_reg(RF95_32_PAYLOAD_LENGTH, DATA_LEN);
+	spi_write_reg(RF95_32_PAYLOAD_LENGTH, DATA_LEN);
 	//spi_write_reg(RF95_35_FIFO_THRESH, 0x01);
 
 	#ifdef SENDER
@@ -295,7 +283,7 @@ ISR(INT0_vect) {
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY | RF95_LOW_FREQUENCY_MODE);
 	//spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 	SET_BIT(state, S7);
-	PRINT("TX-Ready(%X)\n", state);
+	//PRINT("TX-Ready(%X)\n", state);
 }
 #elif RECIEVER
 ISR(INT0_vect) {
@@ -313,7 +301,6 @@ ISR(INT0_vect) {
  */
 void rf95_send(uint8_t * data, uint8_t len){
 	//spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);
-	//spi_write_reg(0x32, len);
 	//while(!(spi_read_reg(0x3e) & 0x20));
 	led_toggle(GRN);
 	// spi_write_reg(RF95_0D_FIFO_ADDR_PTR, 0);

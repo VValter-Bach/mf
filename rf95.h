@@ -6,7 +6,7 @@
 // The crystal oscillator frequency of the module
 #define RF95_FXOSC 32000000.0
 #define RF95_FSTEP  (RF95_FXOSC / 524288)
-#define DATA_LEN 40
+#define DATA_LEN 2
 
 void rf95_setup_lora();
 void rf95_setup_fsk();
