@@ -3,6 +3,7 @@
 #include "backend.h"
 
 #include <util/delay.h>
+#include <avr/interrupt.h>
 
 //! SENDER
 FILE uart_out = FDEV_SETUP_STREAM(uart_write_char, NULL, _FDEV_SETUP_WRITE);
@@ -20,6 +21,7 @@ int main()
 	rf95_setup_fsk();
 	SET_BIT(state, S7);
 	_delay_ms(1000);
+	sei();
 	rf95_send(data, DATA_LEN);
 	while(1){
 		//if (GET_BIT(state, S7)){
@@ -30,7 +32,7 @@ int main()
 		//if(rv & 0x04) led_toggle(BLU);
 		_delay_ms(1500);
 		led_toggle(RED);
-		rf95_send(data, DATA_LEN);
+		//rf95_send(data, DATA_LEN);
 	}
 }
 

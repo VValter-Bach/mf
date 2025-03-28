@@ -192,6 +192,8 @@ void rf95_calibration(){
 }
 
 void rf95_setup_fsk(){
+	SET_BIT(EIMSK, INT0); // set INT0-Interrupt-Flag
+	SET_BITS2(EICRA, ISC01, ISC00); // set Interrupt setting for rising Edge
 
 	rf95_reset();
 
@@ -203,7 +205,7 @@ void rf95_setup_fsk(){
 
 	rf95_calibration();
 
-	spi_write_reg(RF95_01_OP_MODE, RF95_LOW_FREQUENCY_MODE); // putting rf95 to sleep and setting to FSK at the same time
+	spi_write_reg(RF95_01_OP_MODE, RF95_LOW_FREQUENCY_MODE | RF95_MODE_STDBY); // putting rf95 to sleep and setting to FSK at the same time
 	// TODO: check what happens
 	spi_write_reg(RF95_0C_LNA, 0x23);
 	spi_write_reg(RF95_0D_RX_CONFIG,0x1E);
@@ -220,12 +222,12 @@ void rf95_setup_fsk(){
 	spi_write_reg(RF95_3B_IMAGE_CAL,0x02);
 	spi_write_reg(RF95_40_DIO_MAPPING1,0x00);
 	spi_write_reg(RF95_41_DIO_MAPPING2,0x30);
-	spi_write_reg(RF95_23_RX_DELAY, 0x40); // TOOD: MIGHT BE USELESS
+	//spi_write_reg(RF95_23_RX_DELAY, 0x40); // TOOD: MIGHT BE USELESS
 	//spi_write_reg(,);
 	_delay_ms(20); // Wait to apply
 	rv = spi_read_reg(RF95_01_OP_MODE); // verifying the OP_MODE
-	if(rv != RF95_LOW_FREQUENCY_MODE){
-		ERROR(2, "OP_MODE wrong after setting to sleep: %d", rv);
+	if(rv != (RF95_LOW_FREQUENCY_MODE | RF95_MODE_STDBY)){
+		ERROR(2, "OP_MODE wrong after setting to sleep: %d\n", rv);
 	}
 
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY | RF95_LOW_FREQUENCY_MODE); // putting rf95 to sleep and setting to FSK at the same time
@@ -234,11 +236,11 @@ void rf95_setup_fsk(){
 	_delay_ms(500);
 	// Formula from pdf is Fdev = 61 * fdev
 	// setting Frequency deviation in FSK
-	uint16_t fdev = 377; // 377 * 61 = 23kHz frequency deviation
+	uint16_t fdev = 377*10; // 377 * 61 = 23kHz frequency deviation
 	spi_write_reg(RF95_04_FDEV_MSB, (fdev >> 8) & 0x3f);
 	spi_write_reg(RF95_05_FDEV_LSB, fdev & 0xff);
 
-	uint32_t bit_rate = (uint32_t) (SX1276_XTAL_FREQ / 1000);
+	uint32_t bit_rate = (uint32_t) (SX1276_XTAL_FREQ / 600);
 	spi_write_reg(RF95_02_BITRATE_MSB, (bit_rate >> 8) & 0xFF);
 	spi_write_reg(RF95_03_BITRATE_LSB, bit_rate & 0xFF);
 	// setting to Frequency to 434Mhz
@@ -288,6 +290,7 @@ void rf95_setup_fsk(){
  * otherwise we clear the flags on the rf95
  */
 ISR(INT0_vect) {
+	PRINT("TEST\n");
 	led_toggle(BLU);
 	//spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 	SET_BIT(state, S7);
@@ -308,10 +311,11 @@ ISR(INT0_vect) {
  */
 void rf95_send(uint8_t * data, uint8_t len){
 	//spi_write_reg(RF95_01_OP_MODE, RF95_MODE_STDBY);
-	spi_write_reg(0x32, len);
+	//spi_write_reg(0x32, len);
 	//while(!(spi_read_reg(0x3e) & 0x20));
 	led_toggle(GRN);
 	// spi_write_reg(RF95_0D_FIFO_ADDR_PTR, 0);
+	//spi_write_reg(RF95_00_FIFO, len);
 	// TODO: might not be necessary spi_write_reg(RF95_0E_FIFO_TX_BASE_ADDR, 0);
 	spi_write_n(RF95_00_FIFO, data, len);
 	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_TX | RF95_LOW_FREQUENCY_MODE);
