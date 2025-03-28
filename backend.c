@@ -37,6 +37,7 @@ int uart_write_char(char c, __attribute__((unused)) FILE* stream){
 
 
 
+
 /************************* SPI ************************/
 
 /**

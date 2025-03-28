@@ -17,7 +17,7 @@ int main()
 	INIT();
 	led_setup();
 	spi_setup();
-	rf95_setup();
+	rf95_setup_lora();
 	while(1){
 		if (GET_BIT(state, S7)){
 			rf95_receive(data);
