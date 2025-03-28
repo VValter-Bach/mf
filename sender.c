@@ -9,7 +9,7 @@
 FILE uart_out = FDEV_SETUP_STREAM(uart_write_char, NULL, _FDEV_SETUP_WRITE);
 
 /************************ GLOBAL VARIABLES *************************/
-uint8_t state = 0;
+volatile uint8_t state = 0;
 
 
 int16_t AnalogRead(uint8_t pin)
@@ -52,7 +52,7 @@ int main()
 			//rf95_send(data, DATA_LEN);
 			//UN_SET_BIT(state, S7);
 		//}
-		i++;
+		//i++;
 		if ( i > 100) {
 			i = 0;
 			int32_t s = 1024 - AnalogRead(5);

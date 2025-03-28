@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-extern uint8_t state;
+extern volatile uint8_t state;
 
 #define S7 7
 
