@@ -5,7 +5,7 @@
 #include <avr/io.h>
 #include <stdio.h>
 
-#define RST PB1
+#define RST PB0
 #define SS PB2
 #define MOSI PB3
 #define MISO PB4

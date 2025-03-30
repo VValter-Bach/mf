@@ -13,13 +13,27 @@ uint8_t volatile state = 0;
 
 void servo_init(){
 	SET_BIT(DDRD, PD6);
+	SET_BIT(DDRD, PD5);
 	TCCR0A = (1 << COM0A1) | (1 << WGM00) | (1 << WGM01);
 	TCCR0B = (1 << CS02) | (1 << CS00);  // Prescaler 8
 	OCR0A = 38;
+	OCR0B = 0;
 }
 
 void servo_set(uint8_t data){
 	OCR0A = 9 + (data / 9);
+}
+
+void engine_init(){
+	SET_BIT(DDRB, PB1);
+	TCCR1A = (1 << COM1A1) | (1 << WGM11);
+	TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS11);
+	ICR1 = 40000;
+	OCR1A = 3000;
+}
+
+void engine_set(uint8_t data){
+	OCR1A = 1100 + (uint16_t)(data * 6.27f);
 }
 
 int main()
@@ -28,16 +42,20 @@ int main()
 	INIT();
 	led_setup();
 	spi_setup();
-	rf95_setup_fsk();
 	servo_init();
+	engine_init();
+	//_delay_ms(3000);
+	_delay_ms(7000);
+	rf95_setup_fsk();
 	sei();
 	while(1){
 		if (GET_BIT(state, S7)){
 			UN_SET_BIT(state, S7);
 			rf95_receive(data);
 			servo_set(data[1]);
+			engine_set(data[0]);
 			//PRINT("DATA: %8d%8d\n", data[0], data[1]);
-			_delay_ms(50);
+			_delay_ms(70);
 		}
 		led_toggle(GRN);
 		//_delay_ms(1000);

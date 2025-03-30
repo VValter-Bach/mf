@@ -10,14 +10,6 @@
 #define FREQUENCY 434000000.0
 #define PREAMBLE 0
 
-// Pin definitions
-#define RST PB1
-#define SS PB2
-#define MOSI PB3
-#define MISO PB4
-#define SCK PB5
-
-
 /************************ LOCAL VARIABLES *************************/
 
 /*************************** ACTUAL CODE **************************/
