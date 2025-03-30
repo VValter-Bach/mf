@@ -15,6 +15,20 @@ void rf95_receive(uint8_t* data);
 
 // The Frequency Synthesizer step = RH_RF95_FXOSC / 2^^19
 
+/*!
+ * \brief Scaling factor used to perform fixed-point operations
+ */
+#define SX1276_PLL_STEP_SHIFT_AMOUNT                ( 8 )
+/*!
+ * \brief Internal frequency of the radio
+ */
+#define SX1276_XTAL_FREQ                            32000000UL
+
+/*!
+ * \brief PLL step - scaled with SX1276_PLL_STEP_SHIFT_AMOUNT
+ */
+#define SX1276_PLL_STEP_SCALED                      ( SX1276_XTAL_FREQ >> ( 19 - SX1276_PLL_STEP_SHIFT_AMOUNT ) )
+
 
 #ifdef SENDER
 #define RF95_RX_BASE_ADDR 0x80

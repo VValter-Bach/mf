@@ -20,11 +20,6 @@
 
 /************************ LOCAL VARIABLES *************************/
 
-/**
- * @brief This value is to store the offset from the base pointer
- */
-uint8_t offset = 0;
-
 /*************************** ACTUAL CODE **************************/
 
 // ! How hard can i be
@@ -108,19 +103,6 @@ void rf95_setup_lora(){
 	_delay_ms(200);
 	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 }
-/*!
- * \brief Scaling factor used to perform fixed-point operations
- */
-#define SX1276_PLL_STEP_SHIFT_AMOUNT                ( 8 )
-/*!
- * \brief Internal frequency of the radio
- */
-#define SX1276_XTAL_FREQ                            32000000UL
-
-/*!
- * \brief PLL step - scaled with SX1276_PLL_STEP_SHIFT_AMOUNT
- */
-#define SX1276_PLL_STEP_SCALED                      ( SX1276_XTAL_FREQ >> ( 19 - SX1276_PLL_STEP_SHIFT_AMOUNT ) )
 
 static uint32_t rf95_pll_to_freq(uint32_t pllSteps)
 {
@@ -207,9 +189,8 @@ void rf95_setup_fsk(){
 	rf95_calibration();
 
 	spi_write_reg(RF95_01_OP_MODE, RF95_LOW_FREQUENCY_MODE | RF95_MODE_STDBY); // putting rf95 to sleep and setting to FSK at the same time
-	// TODO: check what happens
 	spi_write_reg(RF95_0C_LNA, 0x23);
-	spi_write_reg(RF95_0D_RX_CONFIG,0x1E);
+	spi_write_reg(RF95_0D_RX_CONFIG,0x0E);
 	spi_write_reg(RF95_0E_RSSI_CONFIG,0xD2);
 	spi_write_reg(RF95_1A_AFC_FEI,0x01);
 	spi_write_reg(RF95_1F_PREAMBLE_DETECT,0xAA);
@@ -236,11 +217,11 @@ void rf95_setup_fsk(){
 	_delay_ms(500);
 	// Formula from pdf is Fdev = 61 * fdev
 	// setting Frequency deviation in FSK
-	uint16_t fdev = 377*10; // 377 * 61 = 23kHz frequency deviation
+	uint16_t fdev = 377; // 377 * 61 = 23kHz frequency deviation
 	spi_write_reg(RF95_04_FDEV_MSB, (fdev >> 8) & 0x3f);
 	spi_write_reg(RF95_05_FDEV_LSB, fdev & 0xff);
 
-	uint32_t bit_rate = (uint32_t) (SX1276_XTAL_FREQ / 600);
+	uint32_t bit_rate = (uint32_t) (SX1276_XTAL_FREQ / 30000);
 	spi_write_reg(RF95_02_BITRATE_MSB, (bit_rate >> 8) & 0xFF);
 	spi_write_reg(RF95_03_BITRATE_LSB, bit_rate & 0xFF);
 	// setting to Frequency to 434Mhz
@@ -252,7 +233,7 @@ void rf95_setup_fsk(){
 	// spi_write_reg(RF95_0A_PA_RAMP, 0x6f);
 	// Setting Preamble length
 	spi_write_reg(RF95_25_PREAMBLE_MSB, 0x00);
-	spi_write_reg(RF95_26_PREAMBLE_LSB, 0x02);
+	spi_write_reg(RF95_26_PREAMBLE_LSB, 0x08);
 
 	spi_write_reg(RF95_30_PACKET_CONFIG1, spi_read_reg(RF95_30_PACKET_CONFIG1) & 0x6F);
 	spi_write_reg(RF95_31_PACKET_CONFIG2, spi_read_reg(RF95_31_PACKET_CONFIG2) | 0x40);
@@ -265,6 +246,8 @@ void rf95_setup_fsk(){
 	//spi_write_reg(RF95_36_SEQ_CONFIG1, 0x80 | 0x10 | 0x40); 
 	//spi_write_reg(RF95_36_SEQ_CONFIG1, 0x40);
 	#elif RECIEVER
+	spi_write_reg(RF95_12_RX_BW, 0x0C);
+	spi_write_reg(RF95_01_OP_MODE, RF95_MODE_RXCONTINUOUS | RF95_LOW_FREQUENCY_MODE);
 
 	#else
 	#error NOT SENDER NOR RECIEVER
@@ -319,13 +302,8 @@ void rf95_receive(uint8_t* data){
 	cli();
 	//spi_write_reg(RF95_0D_FIFO_ADDR_PTR, spi_read_reg(RF95_10_FIFO_RX_CURRENT_ADDR)); // Reading packet address and setting reading address to it
 	spi_read_n(RF95_00_FIFO, data, DATA_LEN); // Reading data in global data buffer
-	offset += DATA_LEN;
-	if (offset >= (120 - (2 * DATA_LEN))){
-		offset = 0;
-		spi_write_reg(RF95_10_FIFO_RX_CURRENT_ADDR, RF95_RX_BASE_ADDR);
-		spi_write_reg(RF95_0D_FIFO_ADDR_PTR, RF95_RX_BASE_ADDR);
-	}
+	spi_write_reg(RF95_0D_RX_CONFIG, spi_read_reg(RF95_0D_RX_CONFIG) | 0x40);
 	sei();
-	spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
+	//spi_write_reg(RF95_12_IRQ_FLAGS, 0xFF); // Clearing the Flags
 
 }
