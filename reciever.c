@@ -2,6 +2,7 @@
 #include "main.h"
 #include "backend.h"
 
+#include <stdlib.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
@@ -10,6 +11,7 @@ FILE uart_out = FDEV_SETUP_STREAM(uart_write_char, NULL, _FDEV_SETUP_WRITE);
 
 /************************ GLOBAL VARIABLES *************************/
 uint8_t volatile state = 0;
+uint8_t speed = 125;
 
 void servo_init(){
 	SET_BIT(DDRD, PD6);
@@ -33,7 +35,11 @@ void engine_init(){
 }
 
 void engine_set(uint8_t data){
-	OCR1A = 1100 + (uint16_t)(data * 6.27f);
+	int diff = data - speed;
+	if (abs(diff) > 30) data = (diff > 0) ? speed + 30 : speed - 30;
+	uint8_t tmp = (speed + data) / 2;
+	speed = tmp;
+	OCR1A = 2200 + (uint16_t)(tmp * 6.28f);
 }
 
 int main()
