@@ -15,7 +15,6 @@ uint8_t speed = 125;
 
 void servo_init(){
 	SET_BIT(DDRD, PD6);
-	SET_BIT(DDRD, PD5);
 	TCCR0A = (1 << COM0A1) | (1 << WGM00) | (1 << WGM01);
 	TCCR0B = (1 << CS02) | (1 << CS00);  // Prescaler 8
 	OCR0A = 38;

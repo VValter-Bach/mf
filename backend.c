@@ -44,9 +44,11 @@ int uart_write_char(char c, __attribute__((unused)) FILE* stream){
  * enables SPI in Master mode and sets the sck rate to 1/16
  */
 void spi_setup(){
-	SET_BITS4(DDRB, SS, MOSI, SCK, RST); // setting SS & MOSI & SCK & RST to output pins
+	SET_BITS3(DDRB, SS, MOSI, SCK); // setting SS & MOSI & SCK & RST to output pins
+	SET_BIT(DDRD, RST);
 	SET_BITS2(SPCR, SPE, MSTR); // enables SPI in Master mode
-	SET_BITS2(PORTB, SS, RST); // pulling SS and RST high
+	SET_BIT(PORTB, SS); // pulling SS and RST high
+	SET_BIT(PROTD, RST);
 }
 
 

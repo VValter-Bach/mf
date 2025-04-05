@@ -128,9 +128,9 @@ static uint32_t rf95_freq_to_pll(uint32_t freqInHz)
 }
 
 void rf95_reset(){
-	UN_SET_BIT(PORTB, RST); // resetting by pulling RST pin to low for 20ms
+	UN_SET_BIT(PORTD, RST); // resetting by pulling RST pin to low for 20ms
 	_delay_ms(20);
-	SET_BIT(PORTB, RST); // booting rf95 module up again
+	SET_BIT(PORTD, RST); // booting rf95 module up again
 	_delay_ms(100);
 }
 
