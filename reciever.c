@@ -12,6 +12,7 @@ FILE uart_out = FDEV_SETUP_STREAM(uart_write_char, NULL, _FDEV_SETUP_WRITE);
 /************************ GLOBAL VARIABLES *************************/
 uint8_t volatile state = 0;
 uint8_t speed = 125;
+uint32_t ping = 0;
 
 void servo_init(){
 	SET_BIT(DDRD, PD6);
@@ -54,13 +55,19 @@ int main()
 	rf95_setup_fsk();
 	sei();
 	while(1){
+		ping++;
 		if (GET_BIT(state, S7)){
+			ping = 0;
 			UN_SET_BIT(state, S7);
 			rf95_receive(data);
 			servo_set(data[1]);
 			engine_set(data[0]);
 			//PRINT("DATA: %8d%8d\n", data[0], data[1]);
 			_delay_ms(70);
+		}
+		if (ping > 966987){
+			servo_set(128);
+			engine_set(128);
 		}
 		led_toggle(GRN);
 		//_delay_ms(1000);

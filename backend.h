@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #define RST PD7
-#define SS PB0
+#define SS PB2
 #define MOSI PB3
 #define MISO PB4
 #define SCK PB5

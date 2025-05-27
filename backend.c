@@ -48,7 +48,7 @@ void spi_setup(){
 	SET_BIT(DDRD, RST);
 	SET_BITS2(SPCR, SPE, MSTR); // enables SPI in Master mode
 	SET_BIT(PORTB, SS); // pulling SS and RST high
-	SET_BIT(PROTD, RST);
+	SET_BIT(PORTD, RST);
 }
 
 
