@@ -141,10 +141,10 @@ void pwm_setup()
  * @brief Interrupt handler for TIMER0 Overflow
  * @details TODO:
  */
-ISR(TIMER0_OVF_vect)
-{
+//ISR(TIMER0_OVF_vect)
+//{
 	//led_toggle(BLU);
-}
+//}
 
 
 /************************* LED ************************/
