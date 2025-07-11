@@ -14,26 +14,37 @@ uint8_t volatile state = 0;
 uint8_t speed = 125;
 uint32_t ping = 0;
 
+/**
+ * @brief Initialzes the Servo on Pin D6
+ */
 void servo_init(){
 	SET_BIT(DDRD, PD6);
-	TCCR0A = (1 << COM0A1) | (1 << WGM00) | (1 << WGM01);
-	TCCR0B = (1 << CS02) | (1 << CS00);  // Prescaler 8
-	OCR0A = 38;
+	SET_BITS3(TCCR0A, COM0A1, WGM00, WGM01);
+	SET_BITS2(TCCR0B, CS02, CS00);  // Prescaler 8
+	OCR0A = 23;
 	OCR0B = 0;
 }
 
+/**
+ * @brief Sets the servo steering in a range of 9 to 37
+*/
 void servo_set(uint8_t data){
 	OCR0A = 9 + (data / 9);
 }
 
 void engine_init(){
 	SET_BIT(DDRB, PB1);
-	TCCR1A = (1 << COM1A1) | (1 << WGM11);
-	TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS11);
+	SET_BITS2(TCCR1A, COM1A1, WGM11);
+	SET_BITS3(TCCR1B, WGM13, WGM12, CS11);
 	ICR1 = 40000;
 	OCR1A = 3000;
 }
 
+/**
+ * @brief Sets the engine speed to something between 2200 and 3800
+ * @details This function also has some smothing operations to protect 
+ * the engine and smooth the acceleration and deceleration
+ */
 void engine_set(uint8_t data){
 	int diff = data - speed;
 	if (abs(diff) > 30) data = (diff > 0) ? speed + 30 : speed - 30;
@@ -70,7 +81,6 @@ int main()
 			engine_set(128);
 		}
 		led_toggle(GRN);
-		//_delay_ms(1000);
 	}
 }
 
